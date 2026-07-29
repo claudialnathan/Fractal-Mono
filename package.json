@@ -1,0 +1,15 @@
+{
+  "name": "cln-mono",
+  "version": "1.300.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:browser": "node source/browser_specimens.mjs",
+    "test:factsheet": "node source/verify_factsheet.mjs",
+    "test:desktop": "node source/verify_desktop_specimen.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.11.0",
+    "playwright": "1.57.0"
+  }
+}

@@ -1,0 +1,12 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+build/
+tmp/
+*.log
+
+archive/*.zip
+!archive/CLNMono-v1.252.zip
+!archive/CLNMono-v1.300.zip

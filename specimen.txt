@@ -1,0 +1,17 @@
+CLN MONO
+Gentle brutalism for code and systems.
+
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+abcdefghijklmnopqrstuvwxyz
+0123456789  0O  1Il  5S  8B
+
+@ # $ % & * + - = / \
+() [] {} <> . , : ; ! ? _
+
+const clnMono = {
+  weight: 400,
+  opticalFitting: "calm",
+  ligatures: true,
+};
+
+if (clarity >= character) return "clean";

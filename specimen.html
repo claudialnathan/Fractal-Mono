@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="The complete interactive specimen and technical factsheet for CLN Mono 1.300, designed by Claudia Nathan."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>CLN Mono 1.300 — specimen and factsheet</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./cln-mono.css" />
+    <link rel="stylesheet" href="./specimen.css" />
+    <script src="./specimen-data.js" defer></script>
+    <script src="./specimen.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to specimen</a>
+
+    <header class="site-header">
+      <a class="wordmark" href="#overview" aria-label="CLN Mono, back to top">
+        CLN Mono
+      </a>
+      <nav class="site-nav" aria-label="Specimen sections">
+        <a href="#tester">Tester</a>
+        <a href="#features">Features</a>
+        <a href="#characters">Glyphs</a>
+        <a href="#metrics">Data</a>
+        <a href="#use">Use</a>
+      </nav>
+      <div class="header-actions">
+        <button class="quiet-button theme-toggle" type="button" aria-pressed="false">
+          Dark
+        </button>
+        <a class="download-button" href="./archive/CLNMono-v1.300.zip" download>
+          Download 1.300
+        </a>
+      </div>
+    </header>
+
+    <main id="content">
+      <section class="hero page-section" id="overview" aria-labelledby="overview-heading">
+        <div class="section-shell hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">Designed by Claudia Nathan · SIL OFL 1.1 · Roman</p>
+            <h1 id="overview-heading">CLN MONO</h1>
+            <p class="hero-dek">
+              A calm industrial monospaced family for code, systems, and technical
+              writing. Rational enough for dense work; deliberately softer than a
+              command-centre face.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-action" href="./fonts/desktop/CLNMono-Variable.ttf" download>
+                Variable TTF
+              </a>
+              <a class="secondary-action" href="./fonts/web/CLNMono-Variable.woff2" download>
+                Variable WOFF2
+              </a>
+              <a class="text-link" href="./specimens/CLNMono-factsheet.pdf">
+                Factsheet PDF
+              </a>
+              <a class="text-link" href="./OFL.txt">Read the licence</a>
+            </div>
+          </div>
+
+          <div class="hero-specimen" aria-label="CLN Mono distinguishing characters">
+            <p class="hero-glyphs" contenteditable="true" spellcheck="false">
+              O0o<br />1Il<br />{→}
+            </p>
+            <p class="edit-hint">Editable · dotted O, o, and zero</p>
+          </div>
+        </div>
+
+        <div class="section-shell fact-strip" aria-label="Release facts">
+          <dl>
+            <div>
+              <dt>Version</dt>
+              <dd data-fact="version">Version 1.300</dd>
+            </div>
+            <div>
+              <dt>Axes</dt>
+              <dd><span data-fact="axis">wght 100–800 · opsz 9–72</span></dd>
+            </div>
+            <div>
+              <dt>Named instances</dt>
+              <dd data-fact="instances">9</dd>
+            </div>
+            <div>
+              <dt>Glyphs</dt>
+              <dd data-fact="glyphs">1,743</dd>
+            </div>
+            <div>
+              <dt>Encoded characters</dt>
+              <dd data-fact="characters">1,363</dd>
+            </div>
+            <div>
+              <dt>OpenType features</dt>
+              <dd data-fact="features">38</dd>
+            </div>
+            <div>
+              <dt>Cell advance</dt>
+              <dd data-fact="advance">579 / 1000 UPM</dd>
+            </div>
+            <div>
+              <dt>Language profiles</dt>
+              <dd data-fact="languages">363</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="page-section" id="tester" aria-labelledby="tester-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">01</p>
+            <div>
+              <h2 id="tester-heading">Type tester</h2>
+              <p>
+                Set weight and optical size independently. Size, leading,
+                tracking, alignment, and programming ligatures stay separate.
+              </p>
+            </div>
+          </header>
+
+          <div class="tester-layout">
+            <aside class="control-panel" aria-label="Type tester controls">
+              <div class="control-group">
+                <div class="control-label">
+                  <label for="tester-weight">Weight</label>
+                  <output id="tester-weight-output" for="tester-weight">400</output>
+                </div>
+                <input
+                  id="tester-weight"
+                  type="range"
+                  min="100"
+                  max="800"
+                  value="400"
+                  step="1"
+                />
+                <div class="instance-buttons" data-instance-buttons></div>
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <label for="tester-optical">Optical size</label>
+                  <output id="tester-optical-output" for="tester-optical">14</output>
+                </div>
+                <input
+                  id="tester-optical"
+                  type="range"
+                  min="9"
+                  max="72"
+                  value="14"
+                  step="1"
+                />
+                <p class="control-note">9 text · 14 auto · 72 display</p>
+              </div>
+
+              <div class="compact-controls">
+                <label>
+                  <span>Size</span>
+                  <span class="number-field">
+                    <input id="tester-size" type="number" min="12" max="192" value="72" inputmode="numeric" />
+                    <span>px</span>
+                  </span>
+                </label>
+                <label>
+                  <span>Leading</span>
+                  <span class="number-field">
+                    <input id="tester-leading" type="number" min="0.8" max="2" value="1.05" step="0.05" inputmode="decimal" />
+                    <span>×</span>
+                  </span>
+                </label>
+                <label>
+                  <span>Tracking</span>
+                  <span class="number-field">
+                    <input id="tester-tracking" type="number" min="-0.08" max="0.2" value="0" step="0.01" inputmode="decimal" />
+                    <span>em</span>
+                  </span>
+                </label>
+              </div>
+
+              <div class="button-row" role="group" aria-label="Text alignment">
+                <button type="button" data-align="left" aria-pressed="true">Left</button>
+                <button type="button" data-align="center" aria-pressed="false">Centre</button>
+                <button type="button" data-align="right" aria-pressed="false">Right</button>
+              </div>
+
+              <label class="switch-row">
+                <span>
+                  <strong>Programming ligatures</strong>
+                  <small>Optional <code>dlig</code>; off in the font and here by default.</small>
+                </span>
+                <input class="ligature-toggle" type="checkbox" />
+              </label>
+
+              <button class="reset-button" id="tester-reset" type="button">Reset tester</button>
+            </aside>
+
+            <div class="tester-stage">
+              <label class="visually-hidden" for="tester-text">Editable specimen text</label>
+              <textarea id="tester-text" spellcheck="false">Calibrated precision
+without the
+control-panel pose.</textarea>
+              <div class="tester-readout" aria-live="polite">
+                <span><b data-readout="weight">400</b> weight</span>
+                <span><b data-readout="optical">14</b> opsz</span>
+                <span><b data-readout="size">72</b> px</span>
+                <span><b data-readout="leading">1.05</b> leading</span>
+                <span><b data-readout="tracking">0</b> em</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" id="design" aria-labelledby="design-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">02</p>
+            <div>
+              <h2 id="design-heading">Distinguishing construction</h2>
+              <p>
+                The family keeps a strict fixed cell while making frequently
+                confused forms immediately distinct. These are the default drawings,
+                not alternates staged for the specimen.
+              </p>
+            </div>
+          </header>
+
+          <div class="construction-grid">
+            <article class="construction-card construction-feature">
+              <p class="construction-glyphs">O o 0</p>
+              <div>
+                <h3>Dotted counters</h3>
+                <p>
+                  Capital and lowercase O use centre dots by default. The zero keeps
+                  its wider dot, while lowercase o scales the same contour to 82%.
+                </p>
+              </div>
+            </article>
+            <article class="construction-card">
+              <p class="construction-glyphs">1 I l</p>
+              <div>
+                <h3>Disambiguation</h3>
+                <p>Narrow one, serifed capital I, and flag-and-foot lowercase l.</p>
+              </div>
+            </article>
+            <article class="construction-card">
+              <p class="construction-glyphs">K k r</p>
+              <div>
+                <h3>Style anchors</h3>
+                <p>Plain joined K, open lowercase k, and CLN’s rising r shoulder.</p>
+              </div>
+            </article>
+            <article class="construction-card">
+              <p class="construction-glyphs">t k w</p>
+              <div>
+                <h3>Independent drawings</h3>
+                <p>Short-hooked t, open k, and angular-pinched w redrawn for CLN’s cell.</p>
+              </div>
+            </article>
+            <article class="construction-card">
+              <p class="construction-glyphs">/\ () {}</p>
+              <div>
+                <h3>Measured symbols</h3>
+                <p>Tall but line-fitting slashes, compact brackets, and narrower braces.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" id="weights" aria-labelledby="weights-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">03</p>
+            <div>
+              <h2 id="weights-heading">Two axes, every in-between</h2>
+              <p>
+                Nine named instances cover common UI and editorial roles, but the
+                variable file accepts any whole or fractional weight from 100 to 800,
+                with text-to-display optical sizing from 9 to 72.
+              </p>
+            </div>
+          </header>
+          <div class="weight-waterfall" data-weight-waterfall></div>
+          <div class="optical-comparison" aria-label="Optical size comparison">
+            <article style="font-variation-settings: &quot;opsz&quot; 9">
+              <span>Text 9</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+            <article style="font-variation-settings: &quot;opsz&quot; 14">
+              <span>Auto 14</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+            <article style="font-variation-settings: &quot;opsz&quot; 72">
+              <span>Display 72</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+          </div>
+          <div class="size-waterfall" aria-label="Type size waterfall">
+            <p style="font-size: 64px">Human systems, clearly expressed.</p>
+            <p style="font-size: 48px">Human systems, clearly expressed.</p>
+            <p style="font-size: 36px">Human systems, clearly expressed.</p>
+            <p style="font-size: 28px">Human systems, clearly expressed.</p>
+            <p style="font-size: 20px">Human systems, clearly expressed.</p>
+            <p style="font-size: 16px">Human systems, clearly expressed.</p>
+            <p style="font-size: 13px">Human systems, clearly expressed.</p>
+            <p style="font-size: 11px">Human systems, clearly expressed.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section code-section" id="code" aria-labelledby="code-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">04</p>
+            <div>
+              <h2 id="code-heading">Source stays source</h2>
+              <p>
+                Every programming character keeps one 579-unit cell. The complete
+                joined set remains available under <code>dlig</code>, while copying,
+                selection, and cursor movement keep the source sequence intact.
+              </p>
+            </div>
+          </header>
+
+          <div class="code-toolbar">
+            <label class="switch-row compact-switch">
+              <span>
+                <strong>Preview optional ligatures</strong>
+                <small>150 drawings enabled; 3 legacy sequences remain literal.</small>
+              </span>
+              <input class="ligature-toggle" type="checkbox" />
+            </label>
+            <a class="text-link" href="./ligature-audit.html">Open all 153 definitions</a>
+          </div>
+
+          <div class="code-grid">
+            <article class="code-sample">
+              <header><span>pipeline.ts</span><span>TypeScript</span></header>
+              <pre><code><span class="syntax-keyword">type</span> State = <span class="syntax-string">"idle"</span> | <span class="syntax-string">"running"</span> | <span class="syntax-string">"complete"</span>;
+
+<span class="syntax-keyword">const</span> ready = count &gt;= <span class="syntax-number">3</span> &amp;&amp; state !== <span class="syntax-string">"idle"</span>;
+<span class="syntax-keyword">const</span> next = ready ? <span class="syntax-string">"publish"</span> : <span class="syntax-string">"review"</span>;
+
+queue.map((item) =&gt; item.id);
+pipeline --&gt; validate --&gt; release;</code></pre>
+            </article>
+            <article class="code-sample">
+              <header><span>status.html</span><span>Markup</span></header>
+              <pre><code><span class="syntax-keyword">&lt;main</span> data-state=<span class="syntax-string">"ready"</span><span class="syntax-keyword">&gt;</span>
+  <span class="syntax-keyword">&lt;output&gt;</span>queued -&gt; running -&gt; complete<span class="syntax-keyword">&lt;/output&gt;</span>
+  <span class="syntax-comment">&lt;!-- literal by default; dlig is opt-in --&gt;</span>
+<span class="syntax-keyword">&lt;/main&gt;</span></code></pre>
+            </article>
+          </div>
+
+          <div class="ligature-groups" aria-label="Representative programming sequences">
+            <p><span>Equality</span> == === != !== &lt;= &gt;= &lt;=&gt;</p>
+            <p><span>Arrows</span> -&gt; --&gt; =&gt; ==&gt; &lt;- &lt;=&gt;</p>
+            <p><span>Markup</span> &lt;/ &lt;/&gt; /&gt; &lt;!-- --&gt; #{</p>
+            <p><span>Logic</span> &amp;&amp; || ?? ?: ?. :: :::</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" id="features" aria-labelledby="features-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">05</p>
+            <div>
+              <h2 id="features-heading">OpenType feature laboratory</h2>
+              <p>
+                All 38 unique GSUB and GPOS tags in the release are listed below.
+                Automatic shaping features are identified; optional features can be
+                combined in the live line without changing the font globally.
+              </p>
+            </div>
+          </header>
+
+          <div class="feature-lab">
+            <div class="feature-preview-wrap">
+              <p class="eyebrow">Combined preview</p>
+              <p id="feature-preview" contenteditable="true" spellcheck="false">
+                K k f l m r t u w y · 0O 1Il · 2 5 6 8 9 · === =&gt; &lt;/&gt;
+              </p>
+              <div class="feature-actions">
+                <button id="clear-features" type="button">Clear optional features</button>
+                <output id="active-feature-count" aria-live="polite">0 optional features active</output>
+              </div>
+            </div>
+            <div class="feature-grid" id="feature-grid" aria-label="OpenType features"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" id="characters" aria-labelledby="characters-heading">
+        <div class="section-shell wide-shell">
+          <header class="section-intro">
+            <p class="section-index">06</p>
+            <div>
+              <h2 id="characters-heading">Complete encoded repertoire</h2>
+              <p>
+                Search every cmap entry by character, Unicode name, codepoint,
+                glyph name, script, or block. Combining marks are shown on a dotted
+                circle; controls and spaces use readable labels.
+              </p>
+            </div>
+          </header>
+
+          <div class="coverage-summary" data-coverage-summary></div>
+
+          <div class="glyph-browser">
+            <div class="browser-toolbar">
+              <label class="search-field">
+                <span class="visually-hidden">Filter characters</span>
+                <input
+                  id="character-search"
+                  type="search"
+                  placeholder="Search U+0410, Cyrillic, arrow, brace…"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="select-field">
+                <span class="visually-hidden">Filter by script</span>
+                <select id="script-filter">
+                  <option value="">All scripts</option>
+                </select>
+              </label>
+              <output id="character-count" aria-live="polite">1,363 / 1,363</output>
+            </div>
+
+            <div class="glyph-inspector" id="glyph-inspector" aria-live="polite">
+              <span class="inspector-glyph" aria-hidden="true">A</span>
+              <dl>
+                <div><dt>Codepoint</dt><dd>U+0041</dd></div>
+                <div><dt>Name</dt><dd>Latin Capital Letter A</dd></div>
+                <div><dt>Glyph</dt><dd>A</dd></div>
+                <div><dt>Script / block</dt><dd>Latin / Basic Latin</dd></div>
+              </dl>
+            </div>
+
+            <div
+              class="glyph-grid"
+              id="glyph-grid"
+              aria-label="Encoded character grid; use arrow keys to move"
+            ></div>
+            <p class="empty-state" id="character-empty" hidden>
+              No encoded characters match that search.
+            </p>
+          </div>
+
+          <details class="unencoded-inventory">
+            <summary>
+              All 380 unencoded alternates and constructed glyphs
+              <span data-unencoded-count>380 glyph names</span>
+            </summary>
+            <ul class="unencoded-list" id="unencoded-glyphs"></ul>
+          </details>
+        </div>
+      </section>
+
+      <section class="page-section" id="languages" aria-labelledby="languages-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">07</p>
+            <div>
+              <h2 id="languages-heading">Language coverage</h2>
+              <p>
+                Hyperglot base-orthography analysis reports 363 living or
+                constructed language profiles: 338 Latin, 24 Cyrillic, and 1 Greek.
+                Language counts differ between analyzers because their required
+                character sets and definitions differ.
+              </p>
+            </div>
+          </header>
+
+          <div class="language-stats" data-language-stats></div>
+          <div class="language-browser">
+            <label class="search-field">
+              <span class="visually-hidden">Filter supported languages</span>
+              <input
+                id="language-search"
+                type="search"
+                placeholder="Search language, autonym, ISO code, or script…"
+                autocomplete="off"
+              />
+            </label>
+            <output id="language-count" aria-live="polite">363 / 363</output>
+            <div class="language-groups" id="language-groups"></div>
+            <p class="empty-state" id="language-empty" hidden>
+              No language profiles match that search.
+            </p>
+          </div>
+          <p class="method-note">
+            Method: Hyperglot’s default base-character check, primary orthographies,
+            draft-or-better data, and living/constructed language status. This is a
+            coverage estimate, not a claim of native editorial review for every
+            language.
+          </p>
+        </div>
+      </section>
+
+      <section class="page-section" id="metrics" aria-labelledby="metrics-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">08</p>
+            <div>
+              <h2 id="metrics-heading">Metrics and rasterisation</h2>
+              <p>
+                The line box is intentionally conventional while the visible forms
+                sit on a 680-unit cap height and 528-unit x-height. Spacing glyphs
+                keep the same 579-unit cell across every weight.
+              </p>
+            </div>
+          </header>
+
+          <div class="metrics-diagram" aria-label="CLN Mono vertical metrics diagram">
+            <p class="metric-sample">O H x f g # 1 2</p>
+            <span class="metric-line metric-ymax"><b>yMax</b><i>1009</i></span>
+            <span class="metric-line metric-winasc"><b>Win ascender</b><i>1000</i></span>
+            <span class="metric-line metric-typoasc"><b>Typo / hhea ascender</b><i>950</i></span>
+            <span class="metric-line metric-cap"><b>Cap height</b><i>680</i></span>
+            <span class="metric-line metric-x"><b>x-height</b><i>528</i></span>
+            <span class="metric-line metric-base"><b>Baseline</b><i>0</i></span>
+            <span class="metric-line metric-typodesc"><b>Typo / hhea descender</b><i>−250</i></span>
+            <span class="metric-line metric-windesc"><b>Win descender</b><i>−300</i></span>
+            <span class="metric-line metric-ymin"><b>yMin</b><i>−384</i></span>
+          </div>
+
+          <div class="metric-tables">
+            <table>
+              <caption>Vertical and horizontal values</caption>
+              <tbody id="metric-values"></tbody>
+            </table>
+            <table>
+              <caption>Rasterisation metadata</caption>
+              <tbody>
+                <tr><th scope="row">Outline format</th><td>TrueType quadratic</td></tr>
+                <tr><th scope="row">Hinting</th><td>Unhinted transformed outlines</td></tr>
+                <tr><th scope="row"><code>gasp</code></th><td>Grayscale + symmetric smoothing; no grid fitting</td></tr>
+                <tr><th scope="row">Primary review</th><td>Modern macOS and browsers at 1× / 2×</td></tr>
+                <tr><th scope="row">Open release gate</th><td>Physical Windows rasterisation review</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <details class="table-inventory">
+            <summary>
+              OpenType table directory
+              <span data-table-count>0 tables</span>
+            </summary>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Table</th>
+                    <th scope="col">Payload size</th>
+                  </tr>
+                </thead>
+                <tbody id="table-values"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <div class="raster-proof" aria-label="Small-size rasterisation proof">
+            <div><span>11px / 400</span><p style="font-size:11px;font-weight:400">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+            <div><span>12px / 400</span><p style="font-size:12px;font-weight:400">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+            <div><span>13px / 400</span><p style="font-size:13px;font-weight:400">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+            <div><span>14px / 400</span><p style="font-size:14px;font-weight:400">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+            <div><span>16px / 400</span><p style="font-size:16px;font-weight:400">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+            <div><span>14px / 600</span><p style="font-size:14px;font-weight:600">Hamburgefontsiv · minimum rhythm · 0O 1Il rn m · if (x !== null)</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-section" id="use" aria-labelledby="use-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">09</p>
+            <div>
+              <h2 id="use-heading">Files, installation, and web use</h2>
+              <p>
+                Use the variable file alone, or use the static family alone. Installing
+                both on one machine can produce duplicate style menus in applications.
+              </p>
+            </div>
+          </header>
+
+          <div class="primary-files">
+            <article>
+              <p class="eyebrow">Desktop</p>
+              <h3>Variable TTF</h3>
+              <p>One file, 100–800, nine named instances.</p>
+              <a href="./fonts/desktop/CLNMono-Variable.ttf" download>Download TTF</a>
+            </article>
+            <article>
+              <p class="eyebrow">Web</p>
+              <h3>Variable WOFF2</h3>
+              <p>The complete family and repertoire in approximately 136 KB.</p>
+              <a href="./fonts/web/CLNMono-Variable.woff2" download>Download WOFF2</a>
+            </article>
+            <article>
+              <p class="eyebrow">Release</p>
+              <h3>Complete archive</h3>
+              <p>Variable and static desktop/web files, source, proofs, and licence.</p>
+              <a href="./archive/CLNMono-v1.300.zip" download>Download ZIP</a>
+            </article>
+          </div>
+
+          <div class="installation-grid">
+            <details open>
+              <summary>macOS</summary>
+              <ol>
+                <li>Remove earlier CLN Mono installations.</li>
+                <li>Open <code>CLNMono-Variable.ttf</code> in Font Book.</li>
+                <li>Choose Install, then restart applications that cached the old face.</li>
+              </ol>
+            </details>
+            <details>
+              <summary>Windows</summary>
+              <ol>
+                <li>Remove earlier CLN Mono installations in Font settings.</li>
+                <li>Right-click the variable TTF and choose Install for all users.</li>
+                <li>Restart applications that were open during installation.</li>
+              </ol>
+            </details>
+            <details>
+              <summary>Linux</summary>
+              <ol>
+                <li>Copy the variable TTF to <code>~/.local/share/fonts/</code>.</li>
+                <li>Run <code>fc-cache -f</code>.</li>
+                <li>Restart applications that were open during installation.</li>
+              </ol>
+            </details>
+          </div>
+
+          <div class="implementation-grid">
+            <article class="implementation-card">
+              <header>
+                <h3>Load the variable web font</h3>
+                <button class="copy-button" type="button" data-copy="web-font-face">Copy</button>
+              </header>
+              <pre id="web-font-face"><code>@font-face {
+  font-family: "CLN Mono";
+  src: url("./CLNMono-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  font-synthesis: none;
+}</code></pre>
+            </article>
+            <article class="implementation-card">
+              <header>
+                <h3>Use ordinary and optional features</h3>
+                <button class="copy-button" type="button" data-copy="web-feature-code">Copy</button>
+              </header>
+              <pre id="web-feature-code"><code>.code {
+  font-family: "CLN Mono", monospace;
+  font-weight: 450;
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.code--joined {
+  font-variant-ligatures: discretionary-ligatures;
+}
+
+.alternate-q {
+  font-feature-settings: "cv16" 1;
+}</code></pre>
+            </article>
+          </div>
+
+          <details class="file-inventory">
+            <summary>
+              All 30 release files and SHA-256 hashes
+              <span data-file-count>30 files</span>
+            </summary>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">File</th>
+                    <th scope="col">Use</th>
+                    <th scope="col">Format</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">SHA-256</th>
+                  </tr>
+                </thead>
+                <tbody id="file-values"></tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <section class="page-section" id="provenance" aria-labelledby="provenance-heading">
+        <div class="section-shell">
+          <header class="section-intro">
+            <p class="section-index">10</p>
+            <div>
+              <h2 id="provenance-heading">Authorship, licence, and scope</h2>
+              <p>
+                CLN Mono is designed by Claudia Nathan. Its metrics, fitting,
+                letterforms, features, and specimens form one coherent family.
+              </p>
+            </div>
+          </header>
+
+          <div class="provenance-grid">
+            <article>
+              <h3>Designer</h3>
+              <p>
+                Claudia Nathan designed CLN Mono for code, interfaces, technical
+                writing, and graphic use.
+              </p>
+              <a href="./source/DESIGN_NOTES.md">Read the design notes</a>
+            </article>
+            <article>
+              <h3>Signature forms</h3>
+              <p>
+                K, k, r, t, and w anchor the family. Dotted O/o/0, compact symbols,
+                and the strict 579-unit cell complete CLN Mono’s visual language.
+              </p>
+              <a href="#design">See the construction</a>
+            </article>
+            <article>
+              <h3>Coding behavior</h3>
+              <p>
+                All programming sequences stay literal by default. Optional joined
+                drawings remain available through dlig without changing cursor cells.
+              </p>
+              <a href="#features">Explore OpenType features</a>
+            </article>
+            <article>
+              <h3>Release 1.300</h3>
+              <p>
+                Weight and optical-size masters, redesigned signature forms, and
+                clean square-dot punctuation in one variable family.
+              </p>
+              <a href="./README.md">Full project notes</a>
+            </article>
+          </div>
+
+          <div class="scope-table" role="table" aria-label="Release scope">
+            <div role="row">
+              <span role="columnheader">Included now</span>
+              <p role="cell">Roman upright; weight 100–800; optical size 9–72; 9 named weight instances; Latin, Cyrillic, Greek, symbols, code alternates; 38 OpenType tags.</p>
+            </div>
+            <div role="row">
+              <span role="columnheader">Deliberate defaults</span>
+              <p role="cell">Dotted O/o/0; programming ligatures off; tabular fixed cells; unhinted transformed outlines; modern grayscale smoothing.</p>
+            </div>
+            <div role="row">
+              <span role="columnheader">Not in 1.300</span>
+              <p role="cell">Italic or slant axis; width axis; purpose-built Windows hinting; native editorial review for every detected language.</p>
+            </div>
+            <div role="row">
+              <span role="columnheader">Release validation</span>
+              <p role="cell">30 files parsed; variable interpolation, cell widths, features, repeat guards, metrics, hashes, browser rendering, and protected outlines checked.</p>
+            </div>
+          </div>
+
+          <div class="licence-callout">
+            <div>
+              <p class="eyebrow">SIL Open Font License 1.1</p>
+              <h3>Use, study, modify, embed, and redistribute.</h3>
+            </div>
+            <p>
+              The font may be used privately or commercially and may be modified
+              and redistributed under the OFL conditions. The software is provided
+              without warranty. Read the complete licence before redistribution.
+            </p>
+            <a class="primary-action" href="./OFL.txt">Open OFL.txt</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="section-shell">
+        <div>
+          <strong>CLN Mono</strong>
+          <span data-footer-version>Version 1.300</span>
+        </div>
+        <p>
+          Facts read from the release font with FontTools. Language estimates use
+          Hyperglot. No external assets or analytics are loaded by this specimen.
+        </p>
+        <div class="footer-links">
+          <a href="./README.md">README</a>
+          <a href="./build-report.json">Build report</a>
+          <a href="./specimens/CLNMono-factsheet.pdf">PDF factsheet</a>
+          <a href="./ligature-specimen.html">Ligature specimen</a>
+          <a href="./code-example.html">Code example</a>
+        </div>
+      </div>
+    </footer>
+
+    <div class="copy-status" id="copy-status" aria-live="polite"></div>
+  </body>
+</html>
