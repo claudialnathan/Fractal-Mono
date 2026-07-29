@@ -70,7 +70,7 @@ def specimen() -> Image.Image:
     y += 190
     draw.text(
         (MARGIN, y),
-        "v1.300 — wght 100–800 · opsz 9–72 · ligatures opt-in",
+        "v1.303 — wght 100–800 · opsz 9–72 · ligatures opt-in",
         font=font("Regular", 34),
         fill=MUTED,
     )
@@ -115,7 +115,7 @@ def refinement() -> Image.Image:
     y = MARGIN
     draw.text(
         (MARGIN, y),
-        "CLN Mono 1.300 · Claudia Nathan",
+        "CLN Mono 1.303 · Claudia Nathan",
         font=font("Medium", 54),
         fill=INK,
     )
@@ -145,7 +145,7 @@ def refinement() -> Image.Image:
 
 
 def rk_proof() -> Image.Image:
-    """Dark outline-and-spacing proof matching the supplied reference context."""
+    """Dark outline-and-spacing proof for close contour inspection."""
     image = Image.new("RGB", (WIDTH, 900), DARK_BG)
     draw = ImageDraw.Draw(image)
     for x in range(0, WIDTH, 24):

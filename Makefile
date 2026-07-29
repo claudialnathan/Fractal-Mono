@@ -1,14 +1,17 @@
 PYTHON ?= python3
 NPM ?= npm
 
-.PHONY: setup build validate test specimens release clean
+.PHONY: setup masters build validate test specimens release clean
 
 setup:
 	$(PYTHON) -m pip install -r requirements.txt
 	$(NPM) install
 	$(NPM) exec playwright install chromium
 
-build:
+masters:
+	$(PYTHON) source/generate_signature_masters.py
+
+build: masters
 	$(PYTHON) source/build.py
 	$(PYTHON) source/factsheet_data.py
 	$(PYTHON) source/ligature_audit.py

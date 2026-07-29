@@ -75,7 +75,7 @@ await outline.screenshot({ path: `${specimens}/CLNMono-outline-proof.png` });
 const failures = [
   results.codeLigatures !== "none" &&
     `code page does not disable ligatures: ${results.codeLigatures}`,
-  results.codeVersion !== "CLN Mono 1.300 · ligatures off" &&
+  results.codeVersion !== "CLN Mono 1.303 · ligatures off" &&
     `unexpected code-page version: ${results.codeVersion}`,
   results.ligatureToggleDefault && "ligature feature is enabled by default in the specimen",
   results.ligatureDefault !== "none" &&
@@ -86,7 +86,7 @@ const failures = [
   results.auditToggleDefault && "audit dlig preview is enabled by default",
   results.mainError && `main specimen error: ${results.mainError}`,
   results.mainOverflow > 1 && `main specimen overflows by ${results.mainOverflow}px`,
-  results.mainVersion !== "Version 1.300" &&
+  results.mainVersion !== "Version 1.303" &&
     `unexpected main specimen version: ${results.mainVersion}`,
   results.opticalDefault !== "14" &&
     `unexpected optical-size default: ${results.opticalDefault}`,

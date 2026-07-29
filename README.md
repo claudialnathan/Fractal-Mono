@@ -69,7 +69,7 @@ Programming ligatures are literal by default. Enable them explicitly with `font-
 
 ## Build
 
-Python 3.11+, FontTools, Brotli, Pillow, HarfBuzz, and Node.js are required.
+Python 3.11+, FontTools, NumPy, Brotli, Pillow, HarfBuzz, and Node.js are required.
 
 ```sh
 make setup
@@ -79,11 +79,11 @@ make specimens
 make release
 ```
 
-The build is self-contained. Its OFL upstream binary is stored in `source/upstream/` with a recorded checksum. `make test` checks all 30 font files, both variation axes, shaping, fixed cells, interpolation, contour integrity, square dots, Thin `t`, extreme-weight bounds, metadata, and release hashes.
+The build is self-contained. Its OFL upstream binary and compatible signature-master source are stored in the repository with recorded checksums. `make test` checks all 30 font files, both variation axes, shaping, fixed cells, interpolation, contour integrity, square dots, stroke balance, extreme-weight bounds, metadata, and release hashes.
 
 ## Scope
 
-CLN Mono 1.300 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+CLN Mono 1.303 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
 
 ## Licence
 

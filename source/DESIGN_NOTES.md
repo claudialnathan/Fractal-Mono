@@ -50,6 +50,14 @@ The outlines are deliberately unhinted. The `gasp` table requests grayscale and 
 
 ## Release history
 
+### 1.303
+
+- Rebuilds signature masters with compatible curve-handle movement.
+- Keeps short terminals and bridged joins uniform at every named weight.
+- Stabilizes `f/l/t/r` details and the tapered semicolon construction.
+- Preserves established `O/o/0` bowls while replacing only their dot contours.
+- Extends filled and outline proofs across the complete named design space.
+
 ### 1.300
 
 - Adds a true `opsz` axis with Text, Auto, and Display masters.

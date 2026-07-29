@@ -25,19 +25,20 @@ from cln_geometry import (
     CUSTOM_GLYPH_NAMES,
     DEFAULT_OPSZ,
     DISPLAY_OPSZ,
+    PRESERVED_MASTER_GLYPH_NAMES,
     SQUARE_MARK_NAMES,
     TEXT_OPSZ,
     apply_optical_geometry,
+    install_preserved_master_glyphs,
     install_reference_glyphs,
     install_square_ellipsis,
     install_square_marks,
-    replace_final_contour_with_square,
-    stabilize_lowercase_t,
+    offset_glyph_stable,
 )
 
 
 FAMILY = "CLN Mono"
-VERSION = "1.300"
+VERSION = "1.303"
 UPM = 1000
 ADVANCE = 579
 
@@ -960,41 +961,12 @@ def build_lowercase_w(stem: float):
 
 
 def build_lowercase_r(stem: float):
-    """Build CLN Mono's lowercase r across the weight axis."""
+    """Build CLN Mono's lowercase r with compatible curve-handle movement."""
     scale = X_HEIGHT / CLN_R_REFERENCE_TOP
     cell_shift = (ADVANCE - CLN_R_REFERENCE_ADVANCE * scale) / 2
-    reference = [
-        (x * scale + cell_shift, y * scale)
-        for x, y in CLN_R_POINTS
-    ]
-    reference_stem = CLN_R_REFERENCE_STEM * scale
-    offset = (stem - reference_stem) / 2
-    expanded: list[tuple[float, float]] = []
-
-    # The contour runs clockwise, so its left-hand normal points outward.
-    for index, ((x, y), (_, source_y)) in enumerate(zip(reference, CLN_R_POINTS)):
-        previous = reference[index - 1]
-        following = reference[(index + 1) % len(reference)]
-        tangent_x = following[0] - previous[0]
-        tangent_y = following[1] - previous[1]
-        length = math.hypot(tangent_x, tangent_y)
-        normal_x = -tangent_y / length
-        normal_y = tangent_x / length
-        # Preserve the flat stem top, rising arc, and diagonal terminal. Weight
-        # is added into the counter while the two baseline points stay anchored.
-        expanded_y = y if index <= 9 else y + normal_y * offset
-        if source_y == 0:
-            expanded_y = 0
-        expanded.append((x + normal_x * offset, expanded_y))
-
-    # Hold the reference control-box height stable. This keeps the visible
-    # curve on CLN's x-height while the counter and terminal gain stroke weight.
-    reference_top = max(y for _, y in reference)
-    expanded_top = max(y for _, y in expanded)
-    y_scale = reference_top / expanded_top
     points = [
-        (round(x), round(y * y_scale) if y > 0 else 0)
-        for x, y in expanded
+        (round(x * scale + cell_shift), round(y * scale))
+        for x, y in CLN_R_POINTS
     ]
 
     pen = TTGlyphPen(None)
@@ -1020,7 +992,45 @@ def build_lowercase_r(stem: float):
     pen.lineTo(points[26])
     pen.lineTo(points[27])
     pen.closePath()
-    return pen.glyph()
+    glyph = pen.glyph()
+    reference_stem = CLN_R_REFERENCE_STEM * scale
+    glyph = offset_glyph_stable(
+        glyph,
+        (stem - reference_stem) / 2,
+        (0, X_HEIGHT),
+    )
+    highest = max(y for _, y in glyph.coordinates)
+    if highest:
+        glyph.coordinates = type(glyph.coordinates)(
+            [
+                (x, round(y * X_HEIGHT / highest) if y > 0 else y)
+                for x, y in glyph.coordinates
+            ]
+        )
+    # The stem cap is a horizontal stroke. Let the shoulder curve depart from
+    # it; do not let weight expansion turn those first two points into a wedge.
+    for index in (0, 1):
+        glyph.coordinates[index] = (
+            glyph.coordinates[index][0],
+            X_HEIGHT,
+        )
+    # Distribute the short inner-terminal controls evenly into the shoulder.
+    # Crowding these controls against the cut creates the visible bulb that
+    # appeared at the end of r, especially in ExtraBold.
+    terminal_inner = glyph.coordinates[10]
+    shoulder_inner = glyph.coordinates[14]
+    for index, fraction in zip((11, 12, 13), (0.25, 0.5, 0.75)):
+        glyph.coordinates[index] = (
+            round(
+                terminal_inner[0]
+                + (shoulder_inner[0] - terminal_inner[0]) * fraction
+            ),
+            round(
+                terminal_inner[1]
+                + (shoulder_inner[1] - terminal_inner[1]) * fraction
+            ),
+        )
+    return glyph
 
 
 def swap_in_alternates(font: TTFont) -> None:
@@ -1515,6 +1525,7 @@ def make_optical_master(
     )
     excluded = frozenset(
         set(CUSTOM_GLYPH_NAMES)
+        | set(PRESERVED_MASTER_GLYPH_NAMES)
         | set(SQUARE_MARK_NAMES)
         | {
             "exclamdown",
@@ -1523,30 +1534,9 @@ def make_optical_master(
         }
     )
     apply_optical_geometry(font, opsz, excluded=excluded)
-    stabilize_lowercase_t(font, user_weight, opsz)
+    install_preserved_master_glyphs(font, user_weight, opsz)
     install_reference_glyphs(font, user_weight, opsz)
     install_square_marks(font, user_weight, opsz)
-    replace_final_contour_with_square(
-        font,
-        "zero",
-        user_weight,
-        opsz,
-        scale=0.95,
-    )
-    replace_final_contour_with_square(
-        font,
-        "O",
-        user_weight,
-        opsz,
-        scale=0.95,
-    )
-    replace_final_contour_with_square(
-        font,
-        "o",
-        user_weight,
-        opsz,
-        scale=0.72,
-    )
     install_square_ellipsis(font, user_weight, opsz)
     font.recalcBBoxes = True
     return font

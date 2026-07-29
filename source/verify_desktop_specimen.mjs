@@ -159,7 +159,7 @@ console.log(JSON.stringify(result, null, 2));
 
 const failures = [
   !fontLoaded && "embedded variable font did not load",
-  displayedVersion?.trim() !== "Version 1.300" && `unexpected specimen version: ${displayedVersion}`,
+  displayedVersion?.trim() !== "Version 1.303" && `unexpected specimen version: ${displayedVersion}`,
   glyphCards !== 1363 && `expected 1363 glyph cards, received ${glyphCards}`,
   initialVisibleCount?.trim() !== "1,363 / 1,363" && "initial character count is wrong",
   Object.entries(accessibleStructure).some(([, count]) => count !== 1 && count !== 7) &&

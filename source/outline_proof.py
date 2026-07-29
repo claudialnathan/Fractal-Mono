@@ -14,10 +14,15 @@ from fontTools.varLib.instancer import instantiateVariableFont
 PROJECT = Path(__file__).resolve().parents[1]
 FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
 OUTPUT = PROJECT / "specimens" / "CLNMono-outline-proof.svg"
-GLYPHS = "JjKMWStij!?^;:*"
-WEIGHTS = (100, 400, 800)
-SCALE = 0.066
-PANEL_X = (94, 820)
+GLYPHS = "JjKMWStfilrOo0!?^;:*"
+WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
+OPTICAL_SIZES = (
+    (9, "Text"),
+    (14, "Auto"),
+    (72, "Display"),
+)
+SCALE = 0.057
+PANEL_X = (100, 960)
 
 
 def glyph_path(font: TTFont, glyph_name: str) -> str:
@@ -52,33 +57,49 @@ def row_paths(font: TTFont, x: float, baseline: float, mode: str) -> str:
 def main() -> None:
     OUTPUT.parent.mkdir(exist_ok=True)
     rows: list[str] = []
-    for index, weight in enumerate(WEIGHTS):
-        font = TTFont(FONT)
-        instantiateVariableFont(
-            font,
-            {"wght": weight, "opsz": 14},
-            inplace=True,
-            optimize=True,
-        )
-        baseline = 245 + index * 178
+    section_height = 1060
+    for optical_index, (opsz, optical_label) in enumerate(OPTICAL_SIZES):
+        section_y = 110 + optical_index * section_height
         rows.append(
-            f'<text x="36" y="{baseline - 28}" class="row-label">{weight}</text>'
+            f'<text x="36" y="{section_y}" class="section-title">'
+            f'{optical_label} · opsz {opsz}</text>'
         )
-        rows.append(row_paths(font, PANEL_X[0], baseline, "fill"))
-        rows.append(row_paths(font, PANEL_X[1], baseline, "stroke"))
+        rows.append(
+            f'<text x="{PANEL_X[0]}" y="{section_y + 44}" class="caption">'
+            "Filled</text>"
+        )
+        rows.append(
+            f'<text x="{PANEL_X[1]}" y="{section_y + 44}" class="caption">'
+            "Stroke / no fill</text>"
+        )
+        for weight_index, weight in enumerate(WEIGHTS):
+            font = TTFont(FONT)
+            instantiateVariableFont(
+                font,
+                {"wght": weight, "opsz": opsz},
+                inplace=True,
+                optimize=True,
+            )
+            baseline = section_y + 134 + weight_index * 98
+            rows.append(
+                f'<text x="36" y="{baseline - 14}" class="row-label">'
+                f"{weight}</text>"
+            )
+            rows.append(row_paths(font, PANEL_X[0], baseline, "fill"))
+            rows.append(row_paths(font, PANEL_X[1], baseline, "stroke"))
 
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760">
-  <rect width="1600" height="760" fill="#f5f4ef"/>
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="3310" viewBox="0 0 1800 3310">
+  <rect width="1800" height="3310" fill="#f5f4ef"/>
   <style>
     text {{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; fill: #111111; }}
     .title {{ font-size: 34px; font-weight: 600; }}
+    .section-title {{ font-size: 22px; font-weight: 600; }}
     .caption {{ font-size: 17px; fill: #66665f; }}
     .row-label {{ font-size: 16px; fill: #66665f; }}
   </style>
-  <text x="36" y="54" class="title">CLN Mono 1.300 — outline integrity</text>
-  <text x="94" y="108" class="caption">Filled</text>
-  <text x="820" y="108" class="caption">Stroke / no fill</text>
-  <path d="M760 92V708" stroke="#d3d2cc"/>
+  <text x="36" y="54" class="title">CLN Mono 1.303 — complete design-space outline proof</text>
+  <path d="M900 92V3270" stroke="#d3d2cc"/>
+  <path d="M36 1135H1764M36 2195H1764" stroke="#d3d2cc"/>
   {"".join(rows)}
 </svg>
 """

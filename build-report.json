@@ -1,6 +1,6 @@
 {
   "family": "CLN Mono",
-  "version": "1.300",
+  "version": "1.303",
   "format": "TrueType outlines; variable wght and opsz axes plus static instances",
   "metrics": {
     "unitsPerEm": 1000,
@@ -474,124 +474,124 @@
   },
   "files": {
     "fonts/desktop/CLNMono-Variable.ttf": {
-      "bytes": 488048,
-      "sha256": "6ed7e2c3415cad0c13b53d7fbae2f5be96b3bca547f798d79d5315bcbb623bdc"
+      "bytes": 489856,
+      "sha256": "f41bc089a15166e2c4cd8cc8c912e13adb4dc7c07fe6fafe5cbe3276d4618180"
     },
     "fonts/desktop/CLNMono-Thin.ttf": {
-      "bytes": 193456,
-      "sha256": "3c400581eafbac8ced6a2db538609729524455bf392d2c64aace39ef79006db9"
+      "bytes": 193464,
+      "sha256": "7a434f9603c9c5c240f93d945ca2cd1441140eba5e3e50cacc8f575c8785fd4d"
     },
     "fonts/desktop/CLNMono-ExtraLight.ttf": {
-      "bytes": 193512,
-      "sha256": "c860622c5de6f696385f9b9332de5a5cb6a78a5c306c5ac0cc6ab6161347dec3"
+      "bytes": 193524,
+      "sha256": "0c47bc2e39759f218ed1820f6102ab4ac4704d80286493968960748f579ea4c5"
     },
     "fonts/desktop/CLNMono-Light.ttf": {
-      "bytes": 193340,
-      "sha256": "344aa9d2829d27b0e7e8ebba51bdd84f9879705f1e3c953681e65f59e2b389d3"
+      "bytes": 193356,
+      "sha256": "8fad4b92cbf30920248b42671dd910f1806f7317257888093c952c93913a0ed9"
     },
     "fonts/desktop/CLNMono-Regular.ttf": {
-      "bytes": 193316,
-      "sha256": "8b9b97d4c81042db7614f2fb3dc2e0be20bc287487c13f8acfad677619d49b20"
+      "bytes": 193312,
+      "sha256": "ac83c1c26f74d4af5905671a1864640b2146787e0986a8b3c5988e249deeb598"
     },
     "fonts/desktop/CLNMono-Book.ttf": {
-      "bytes": 193272,
-      "sha256": "a49e9197e3aec3e10d11ce2c7235447b6077dc4b60351e3464b7bb526a5b46a7"
+      "bytes": 193268,
+      "sha256": "87d7584e5f68dcd640ecb5cdbfa1d6decdfc8d68f6ccc86c79b4e432ee04bd90"
     },
     "fonts/desktop/CLNMono-Medium.ttf": {
-      "bytes": 193264,
-      "sha256": "b61f733478456dd1b0604c2deb3b8de0349553edeaabd112f0c5cb4822c60d13"
+      "bytes": 193276,
+      "sha256": "24ee6406e22612df2116ba0f80f9562348a049ac8a155de5d35254a28e5879ac"
     },
     "fonts/desktop/CLNMono-SemiBold.ttf": {
-      "bytes": 193340,
-      "sha256": "e120561afb82d817ab0c95641a6ab133e9b2eb40f7453dec234107efa21e7c49"
+      "bytes": 193344,
+      "sha256": "93ef944ecb1107d770b2617d6dd48f0166f0acb203a184f2ec651f6185fc4917"
     },
     "fonts/desktop/CLNMono-Bold.ttf": {
       "bytes": 193212,
-      "sha256": "f7388283f4f3609b716a25e3b8e95831453c68ccb3e8a486908899fc0f0b6cc3"
+      "sha256": "03495388587d90d19caffcc1a8527371ef280116909290e47d598935f0161b9a"
     },
     "fonts/desktop/CLNMono-ExtraBold.ttf": {
-      "bytes": 193172,
-      "sha256": "207057114de4cdb30234c1fd1f42d3b848d67b893f5fa94ae1014ef6759b894e"
+      "bytes": 193168,
+      "sha256": "35ed947580db1001feabf76d589015b52842cc9ccb19833e7988cb7a48467212"
     },
     "fonts/web/CLNMono-Bold.woff": {
-      "bytes": 93112,
-      "sha256": "35bedefef1fe5a81cd030cd17633791b9258c65a0667649cfb5a4691dc271ec1"
+      "bytes": 92996,
+      "sha256": "b7a877c7bc44a317516c5b880ab366397a8a926a826387073034f084eadfbc27"
     },
     "fonts/web/CLNMono-Bold.woff2": {
-      "bytes": 68808,
-      "sha256": "55981a376d255c8da36f5716b44d0944c90f1ed436704744ba200cfa481ae488"
+      "bytes": 68704,
+      "sha256": "3a7287006f9cce16fe2cacd6bdb9ecdc4e31502129cd2c1a7efd65d144769eae"
     },
     "fonts/web/CLNMono-Book.woff": {
-      "bytes": 92244,
-      "sha256": "7fd5e350b2acd6c9d8e4ffe8dd20216dd73f998f4b9f64809a1893bff620f074"
+      "bytes": 92200,
+      "sha256": "60a13f3b0da63fdadf39ddde370850df281f8d541a62afeacb09f34a26302538"
     },
     "fonts/web/CLNMono-Book.woff2": {
-      "bytes": 68080,
-      "sha256": "d3b6f991db3c3b59aca869016c1e817ef1d0580d2d45772899f57e106039c734"
+      "bytes": 68208,
+      "sha256": "9765b334dc53acb851c37c245add824d1a0e255381e33cc1063ac12ef677ee0f"
     },
     "fonts/web/CLNMono-ExtraBold.woff": {
-      "bytes": 92628,
-      "sha256": "dd5b8e632506ad3cf59bcefff025da4d0d0e9b0aad8dcd533f6fd4b09e304fbd"
+      "bytes": 92524,
+      "sha256": "659e5d55b127842cb6253083294d7e9181f6ac969299a5451611646600ec33d8"
     },
     "fonts/web/CLNMono-ExtraBold.woff2": {
-      "bytes": 68568,
-      "sha256": "ad359e918ae37a97e9dbb7b62c1925453fb1f2d0b89bc34e1f5e16a45c0e1286"
+      "bytes": 68388,
+      "sha256": "cd122516595e1b7589908947c141907518a3c02a24199c2624d026f8df449fb9"
     },
     "fonts/web/CLNMono-ExtraLight.woff": {
-      "bytes": 92264,
-      "sha256": "f164ccc85798c3984a70ce39235837d3a1a412c5151cf53faa8fad99a0c77561"
+      "bytes": 92208,
+      "sha256": "4a4de506eadc0b3a029face515ccacb5af50ca546c3f34d0a033562b9935266e"
     },
     "fonts/web/CLNMono-ExtraLight.woff2": {
-      "bytes": 67784,
-      "sha256": "82338c8011db2004c928310fdf3f5e907a033aac231d196bf7f54e66cf57e120"
+      "bytes": 67980,
+      "sha256": "35eeaf949ac016601668ead7e137ac644a28745f0759aa658ce15d66486538bb"
     },
     "fonts/web/CLNMono-Light.woff": {
-      "bytes": 92076,
-      "sha256": "35d9b25fb3f34e3dbd1a1bef91cb51794c99e2277f7245f345dc798e0a861103"
+      "bytes": 92008,
+      "sha256": "4c6a0153c16aea52e6ba5580155cb7931fda287405840c1474d5edc46cd7361e"
     },
     "fonts/web/CLNMono-Light.woff2": {
-      "bytes": 67624,
-      "sha256": "df256737b2c889adec34a569801d46993e2d91c8f7d0400da385cecdabe00ebe"
+      "bytes": 67412,
+      "sha256": "1c78cfc11c7a0bdf2017d3f37db1297436cc6a3f5b649a16f3b37ffd3927ec3e"
     },
     "fonts/web/CLNMono-Medium.woff": {
-      "bytes": 92660,
-      "sha256": "37663f7da3e8105f4ec38bf1e43ac58db77d6b9fe466d7950c61bd34bf1079cb"
+      "bytes": 92636,
+      "sha256": "6d541307cadeea0b88d0322b582b1d05e47686b3e2abccf9808b6eb1c636d290"
     },
     "fonts/web/CLNMono-Medium.woff2": {
-      "bytes": 68316,
-      "sha256": "50d31465d0f4f00ea29f6c0939537221c8a8bdd6f0a88ea1cff5dbbea8328f67"
+      "bytes": 68400,
+      "sha256": "973c7e479e443941befb21d765c0bd094868f8999cef09b30f7a1e7cd9bb16b9"
     },
     "fonts/web/CLNMono-Regular.woff": {
-      "bytes": 91772,
-      "sha256": "acc4ff10e3ac2de8185acb93e4b4219566eec6eaa00145f137d66075c46558bc"
+      "bytes": 91716,
+      "sha256": "d9a4c6c8784b02d86cb9b4a0099fd9233034881058bb208f1e4c7ebaf8c95dc8"
     },
     "fonts/web/CLNMono-Regular.woff2": {
-      "bytes": 67468,
-      "sha256": "86f7b1fea7778fcba2df6a9ba33e13032c22ee565649974c8f66671f5c35c0f2"
+      "bytes": 67268,
+      "sha256": "47dbf2acbbbdf0692d5b54e853ab898e0abdf3661b3fefaadc3b1a4a8de48953"
     },
     "fonts/web/CLNMono-SemiBold.woff": {
-      "bytes": 92996,
-      "sha256": "ccdc221793e22be8173fd27c2d3d56333c10d66db8baa05617fe45b9e16710dc"
+      "bytes": 92952,
+      "sha256": "af0489a43170c2c5cef77b2e526f1618a4425171471c9ad61a0ecea9aca8e9bf"
     },
     "fonts/web/CLNMono-SemiBold.woff2": {
-      "bytes": 68724,
-      "sha256": "6a1d385b13441568d6b79e8d4d6b71ec31d5a6e6a79fc18333f73970b316ac93"
+      "bytes": 68604,
+      "sha256": "5b215385276d60b402bcd675f17fcbd78e8d710ce0b00fb0c7437d910bb36340"
     },
     "fonts/web/CLNMono-Thin.woff": {
-      "bytes": 92000,
-      "sha256": "26650049dfe45162040070561c20cf1f606e1b529ed48d1893baca199b50f3bb"
+      "bytes": 91932,
+      "sha256": "154978557657d021b1d4cf2ce89e68a483b9b17c6a2c3971547caf99572395cd"
     },
     "fonts/web/CLNMono-Thin.woff2": {
-      "bytes": 67568,
-      "sha256": "2bc20ddd365284b45c93ec60b46e177113d7ef32c9f3f7842d67e96820c86e91"
+      "bytes": 67756,
+      "sha256": "938defec632d5e57ef62e1bfbb90c4733d1ce04c72c66f408c252997732cb2b8"
     },
     "fonts/web/CLNMono-Variable.woff": {
-      "bytes": 229236,
-      "sha256": "11e5f5205ba2e85a7dd2619ae2c18fc69e28f196667507697a0e7df1d31962cc"
+      "bytes": 229720,
+      "sha256": "eb6fb535d9f5f6bc9a0f42f47d13adbcd5005b2945dfe5964c65a207a93e5205"
     },
     "fonts/web/CLNMono-Variable.woff2": {
-      "bytes": 182504,
-      "sha256": "108c505abfb88e5cab5a1da258a59efa42d4347580f1e97dbcdc8722583f34c1"
+      "bytes": 182944,
+      "sha256": "fb323a8857094f65e8fa7c4a29678f3c201cde19863f098ef037307f47573bde"
     }
   }
 }

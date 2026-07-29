@@ -319,7 +319,7 @@ await printable.pdf({
   displayHeaderFooter: true,
   headerTemplate: "<span></span>",
   footerTemplate:
-    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>CLN Mono 1.300</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>CLN Mono 1.303</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
 });
 
 await Promise.all([desktop.close(), mobile.close(), printable.close()]);

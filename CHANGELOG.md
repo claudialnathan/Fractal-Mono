@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.303
+
+- Rebuilt signature weight masters with compatible curve-handle movement.
+- Preserved the signature `J/j/K/M/W/S` constructions through every named weight.
+- Matched `f`, `l`, and `t` horizontal details to the family stroke system.
+- Removed the lowercase `r` terminal bulge and stabilized its shoulder.
+- Restored the tapered semicolon tail and protected the established `O/o/0` bowls.
+- Expanded outline and interpolation validation to every named weight at Text, Auto, and Display optical sizes.
+
 ## 1.300
 
 - Added a continuous optical-size axis from 9 to 72.

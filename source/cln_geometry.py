@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import math
 import unicodedata
 from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
 
 from fontTools.misc.transform import Transform
 from fontTools.pens.boundsPen import BoundsPen
@@ -12,6 +15,8 @@ from fontTools.pens.cu2quPen import Cu2QuPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.svgLib.path import parse_path
+from fontTools.ttLib.tables._g_l_y_f import Glyph, GlyphCoordinates
+from fontTools.ttLib.tables.ttProgram import Program
 
 
 ADVANCE = 579
@@ -163,7 +168,11 @@ REFERENCE_SPECS = {
 
 
 CUSTOM_GLYPH_NAMES = frozenset(REFERENCE_SPECS)
+PRESERVED_MASTER_GLYPH_NAMES = frozenset(
+    {"t", "f", "l", "r", "O", "o", "zero"}
+)
 SQUARE_MARK_NAMES = frozenset({"uni0307", "uni0308", "dotbelowcomb"})
+SIGNATURE_MASTERS_PATH = Path(__file__).with_name("signature_masters.json")
 
 
 def stem_for_weight(weight: float) -> float:
@@ -239,7 +248,15 @@ def _nearest_distinct(coordinates, indices: list[int], position: int, step: int)
     return origin
 
 
-def _offset_glyph(glyph, amount: float, anchor_y: tuple[int, ...]):
+def offset_glyph_stable(glyph, amount: float, anchor_y: tuple[int, ...]):
+    """Offset explicit on-curve points and carry their movement into controls.
+
+    Moving every quadratic control along its own local normal can reverse short
+    handles at joins and terminals. Compatible masters instead move the
+    explicit outline points first, then interpolate that displacement through
+    each intervening off-curve chain. This preserves compatible curves while
+    still adding or removing weight.
+    """
     if not amount:
         return glyph
     coordinates = list(glyph.coordinates)
@@ -248,7 +265,17 @@ def _offset_glyph(glyph, amount: float, anchor_y: tuple[int, ...]):
         indices = list(contour_range)
         area = _signed_area(coordinates, contour_range)
         outward_sign = 1 if area > 0 else -1
-        for position, index in enumerate(indices):
+        on_curve_positions = [
+            position
+            for position, index in enumerate(indices)
+            if glyph.flags[index] & 1
+        ]
+        if not on_curve_positions:
+            continue
+
+        displacements: dict[int, tuple[float, float]] = {}
+        for position in on_curve_positions:
+            index = indices[position]
             x, y = coordinates[index]
             previous = _nearest_distinct(coordinates, indices, position, -1)
             following = _nearest_distinct(coordinates, indices, position, 1)
@@ -259,13 +286,42 @@ def _offset_glyph(glyph, amount: float, anchor_y: tuple[int, ...]):
                 continue
             normal_x = outward_sign * tangent_y / length
             normal_y = outward_sign * -tangent_x / length
-            moved_y = y + normal_y * amount
+            delta_x = normal_x * amount
+            delta_y = normal_y * amount
             if any(abs(y - anchor) <= 1 for anchor in anchor_y):
-                moved_y = y
+                delta_y = 0
+            displacements[position] = (delta_x, delta_y)
             expanded[index] = (
-                round(x + normal_x * amount),
-                round(moved_y),
+                round(x + delta_x),
+                round(y + delta_y),
             )
+
+        contour_length = len(indices)
+        for start_position, next_position in zip(
+            on_curve_positions,
+            [*on_curve_positions[1:], on_curve_positions[0] + contour_length],
+        ):
+            span = next_position - start_position
+            if span <= 1:
+                continue
+            start_delta = displacements[start_position]
+            end_delta = displacements[next_position % contour_length]
+            for offset in range(1, span):
+                position = (start_position + offset) % contour_length
+                index = indices[position]
+                fraction = offset / span
+                delta_x = start_delta[0] + (
+                    end_delta[0] - start_delta[0]
+                ) * fraction
+                delta_y = start_delta[1] + (
+                    end_delta[1] - start_delta[1]
+                ) * fraction
+                x, y = coordinates[index]
+                expanded[index] = (
+                    round(x + delta_x),
+                    round(y + delta_y),
+                )
+
     glyph.coordinates = type(glyph.coordinates)(expanded)
     return glyph
 
@@ -297,29 +353,154 @@ def _reshape_square_contour(
     x_max = max(x for x, _ in points)
     y_min = min(y for _, y in points)
     y_max = max(y for _, y in points)
-    target = size if size is not None else max(x_max - x_min, y_max - y_min)
+    target = round(
+        size if size is not None else max(x_max - x_min, y_max - y_min)
+    )
     center_x = (x_min + x_max) / 2
     center_y = (y_min + y_max) / 2
     if top is not None:
         center_y = top - target / 2
+    left = round(center_x - target / 2)
+    right = left + target
+    bottom = round(center_y - target / 2)
+    target_top = bottom + target
     clockwise = _signed_area(glyph.coordinates, range(contour[0], contour[-1] + 1)) < 0
     if clockwise:
         points = [
-            (center_x - target / 2, center_y + target / 2),
-            (center_x + target / 2, center_y + target / 2),
-            (center_x + target / 2, center_y - target / 2),
-            (center_x - target / 2, center_y - target / 2),
+            (left, target_top),
+            (right, target_top),
+            (right, bottom),
+            (left, bottom),
         ]
     else:
         points = [
-            (center_x - target / 2, center_y - target / 2),
-            (center_x + target / 2, center_y - target / 2),
-            (center_x + target / 2, center_y + target / 2),
-            (center_x - target / 2, center_y + target / 2),
+            (left, bottom),
+            (right, bottom),
+            (right, target_top),
+            (left, target_top),
         ]
     for index, point in zip(contour, points):
-        glyph.coordinates[index] = tuple(round(value) for value in point)
+        glyph.coordinates[index] = point
         glyph.flags[index] |= 1
+
+
+@lru_cache(maxsize=1)
+def _signature_master_data() -> dict[str, object]:
+    return json.loads(SIGNATURE_MASTERS_PATH.read_text(encoding="utf-8"))
+
+
+def _master_outline(name: str, weight: float):
+    data = _signature_master_data()
+    weights = [float(value) for value in data["weights"]]
+    masters = data["masters"]
+
+    if weight <= weights[0]:
+        lower = upper = weights[0]
+        fraction = 0
+    elif weight >= weights[-1]:
+        lower = upper = weights[-1]
+        fraction = 0
+    else:
+        lower = weights[0]
+        upper = weights[-1]
+        for candidate_lower, candidate_upper in zip(weights, weights[1:]):
+            if candidate_lower <= weight <= candidate_upper:
+                lower = candidate_lower
+                upper = candidate_upper
+                break
+        fraction = 0 if lower == upper else (weight - lower) / (upper - lower)
+
+    def key(value: float) -> str:
+        return f"{value:.6f}".rstrip("0").rstrip(".")
+
+    lower_outline = masters[key(lower)][name]
+    upper_outline = masters[key(upper)][name]
+    if (
+        lower_outline["endPtsOfContours"] != upper_outline["endPtsOfContours"]
+        or lower_outline["flags"] != upper_outline["flags"]
+    ):
+        raise ValueError(f"Incompatible signature masters for {name}")
+
+    coordinates = [
+        (
+            round(lower_x + (upper_x - lower_x) * fraction),
+            round(lower_y + (upper_y - lower_y) * fraction),
+        )
+        for (lower_x, lower_y), (upper_x, upper_y) in zip(
+            lower_outline["coordinates"],
+            upper_outline["coordinates"],
+        )
+    ]
+    glyph = Glyph()
+    glyph.numberOfContours = len(lower_outline["endPtsOfContours"])
+    glyph.coordinates = GlyphCoordinates(coordinates)
+    glyph.endPtsOfContours = list(lower_outline["endPtsOfContours"])
+    glyph.flags = bytearray(lower_outline["flags"])
+    glyph.program = Program()
+    return glyph
+
+
+def _contour_square_size(glyph, contour_index: int) -> float:
+    contour = list(_contour_ranges(glyph)[contour_index])
+    points = [glyph.coordinates[index] for index in contour]
+    return max(
+        max(x for x, _ in points) - min(x for x, _ in points),
+        max(y for _, y in points) - min(y for _, y in points),
+    )
+
+
+def _apply_signature_optical_geometry(
+    name: str,
+    glyph,
+    opsz: float,
+) -> None:
+    if opsz == DEFAULT_OPSZ:
+        return
+
+    if name in {"J", "K", "M", "W", "S", "O"}:
+        x_factor = optical_value(opsz, 1.005, 1, 0.975)
+    elif name in {"j", "t", "f", "l", "r", "o"}:
+        x_factor = optical_value(opsz, 1.010, 1, 0.980)
+    elif name == "zero":
+        x_factor = optical_value(opsz, 1.008, 1, 0.985)
+    elif REFERENCE_SPECS.get(name, ReferenceSpec(1, 0)).optical_x:
+        x_factor = optical_value(opsz, 1.006, 1, 0.975)
+    else:
+        x_factor = 1
+
+    transformed = []
+    rigid_ascender_details = {
+        "f": frozenset(range(5, 15)),
+        "l": frozenset(range(3, 7)),
+    }.get(name, frozenset())
+    for index, (x, y) in enumerate(glyph.coordinates):
+        x = ADVANCE / 2 + (x - ADVANCE / 2) * x_factor
+        if name in {"j", "t", "f", "l", "r", "o"}:
+            if index not in rigid_ascender_details:
+                y = _lowercase_y(y, opsz)
+        transformed.append((round(x), round(y)))
+    glyph.coordinates = GlyphCoordinates(transformed)
+
+    square_contours = {
+        "j": (1,),
+        "exclam": (1,),
+        "question": (1,),
+        "colon": (0, 1),
+        "semicolon": (0,),
+        "period": (0,),
+        "O": (-1,),
+        "o": (-1,),
+        "zero": (-1,),
+    }.get(name, ())
+    optical_square_scale = optical_value(opsz, 1.06, 1, 0.90)
+    for contour_index in square_contours:
+        size = _contour_square_size(glyph, contour_index)
+        _reshape_square_contour(
+            glyph,
+            contour_index,
+            size=size * optical_square_scale,
+            top=LOWERCASE_ASCENDER_HEIGHT if name == "j" else None,
+        )
 
 
 def square_size(stem: float, opsz: float, *, scale: float = 1) -> float:
@@ -329,84 +510,8 @@ def square_size(stem: float, opsz: float, *, scale: float = 1) -> float:
 
 
 def build_reference_glyph(name: str, weight: float, opsz: float):
-    spec = REFERENCE_SPECS[name]
-    stem = stem_for_weight(weight)
-    heavy_correction = {
-        "J": 0.06,
-        "j": 0.10,
-        "K": 0.08,
-        "M": 0.16,
-        "W": 0.16,
-        "S": 0.10,
-        "question": 0.10,
-        "asciicircum": 0.15,
-    }.get(name, 0)
-    heavy_fraction = max(0, weight - 500) / 300
-    target_stem = stem * (1 - heavy_fraction * heavy_correction)
-    if name == "asterisk":
-        target_stem *= 0.85
-    glyph = _reference_glyph(name)
-    glyph = _offset_glyph(
-        glyph,
-        (target_stem - spec.reference_stem) / 2,
-        spec.anchor_y,
-    )
-
-    if spec.optical_x:
-        extreme_fit = 1 - max(0, weight - 500) / 300 * 0.03
-        glyph = _scale_x(
-            glyph,
-            optical_value(opsz, 1.006, 1, 0.975) * extreme_fit,
-        )
-
-    if name == "asciicircum":
-        # Preserve the inner apex order as the two strokes thicken. A generic
-        # contour offset can otherwise invert these two points above Medium.
-        right_apex = glyph.coordinates[5]
-        left_apex = glyph.coordinates[6]
-        if right_apex[0] <= left_apex[0]:
-            glyph.coordinates[5] = (left_apex[0], right_apex[1])
-            glyph.coordinates[6] = (right_apex[0], left_apex[1])
-
-    if name == "j":
-        ranges = _contour_ranges(glyph)
-        body = ranges[0]
-        target_x_height = optical_value(opsz, 540, X_HEIGHT, 500)
-        for index in body:
-            x, y = glyph.coordinates[index]
-            if 0 <= y <= X_HEIGHT:
-                y = y * target_x_height / X_HEIGHT
-            elif X_HEIGHT < y <= LOWERCASE_ASCENDER_HEIGHT:
-                y = target_x_height + (
-                    (y - X_HEIGHT)
-                    * (LOWERCASE_ASCENDER_HEIGHT - target_x_height)
-                    / (LOWERCASE_ASCENDER_HEIGHT - X_HEIGHT)
-                )
-            elif y < 0:
-                descender_target = optical_value(
-                    opsz,
-                    -202,
-                    LOWERCASE_DESCENDER,
-                    -188,
-                )
-                y = y * descender_target / LOWERCASE_DESCENDER
-            glyph.coordinates[index] = (x, round(y))
-        if weight > 500:
-            glyph = _scale_x(glyph, 1 - (weight - 500) / 300 * 0.02)
-        _reshape_square_contour(
-            glyph,
-            1,
-            size=square_size(stem, opsz),
-            top=LOWERCASE_ASCENDER_HEIGHT,
-        )
-    elif name in {"period", "exclam", "question", "colon", "semicolon"}:
-        for contour_index, contour in enumerate(_contour_ranges(glyph)):
-            if len(contour) == 4 and all(glyph.flags[index] & 1 for index in contour):
-                pin_top = None
-                if name in {"exclam", "question"} and contour_index == 1:
-                    pin_top = None
-                _reshape_square_contour(glyph, contour_index, top=pin_top)
-
+    glyph = _master_outline(name, weight)
+    _apply_signature_optical_geometry(name, glyph, opsz)
     return glyph
 
 
@@ -465,47 +570,6 @@ def install_square_marks(font, weight: float, opsz: float) -> None:
         )
 
 
-def _last_contour_center(glyph) -> tuple[float, float]:
-    contour = list(_contour_ranges(glyph)[-1])
-    coordinates = [glyph.coordinates[index] for index in contour]
-    return (
-        (min(x for x, _ in coordinates) + max(x for x, _ in coordinates)) / 2,
-        (min(y for _, y in coordinates) + max(y for _, y in coordinates)) / 2,
-    )
-
-
-def replace_final_contour_with_square(
-    font,
-    glyph_name: str,
-    weight: float,
-    opsz: float,
-    *,
-    scale: float = 1,
-) -> None:
-    glyphs = font["glyf"]
-    glyph = glyphs[glyph_name]
-    assert not glyph.isComposite() and glyph.numberOfContours > 0
-    ranges = _contour_ranges(glyph)
-    center_x, center_y = _last_contour_center(glyph)
-    contours = [
-        [glyph.coordinates[index] for index in contour]
-        for contour in ranges[:-1]
-    ]
-    contours.append(
-        _clockwise_square(
-            center_x,
-            center_y,
-            square_size(stem_for_weight(weight), opsz, scale=scale),
-        )
-    )
-    _replace_contours(glyph, contours)
-    glyph.recalcBounds(glyphs)
-    font["hmtx"].metrics[glyph_name] = (
-        font["hmtx"].metrics[glyph_name][0],
-        glyph.xMin,
-    )
-
-
 def install_square_ellipsis(font, weight: float, opsz: float) -> None:
     glyphs = font["glyf"]
     glyph = glyphs["ellipsis"]
@@ -545,6 +609,9 @@ def install_reference_glyphs(font, weight: float, opsz: float) -> None:
     glyphs = font["glyf"]
     for glyph_name in REFERENCE_SPECS:
         glyph = build_reference_glyph(glyph_name, weight, opsz)
+        if glyph_name == "j":
+            _stabilize_reference_j(font, glyph)
+        _stabilize_reference_shape(glyph_name, glyph)
         glyph.recalcBounds(glyphs)
         glyphs[glyph_name] = glyph
         font["hmtx"].metrics[glyph_name] = (ADVANCE, glyph.xMin)
@@ -554,6 +621,192 @@ def install_reference_glyphs(font, weight: float, opsz: float) -> None:
         glyph.recalcBounds(glyphs)
         glyphs[inverted] = glyph
         font["hmtx"].metrics[inverted] = (ADVANCE, glyph.xMin)
+
+
+def _h_strokes(font) -> tuple[int, int]:
+    h_glyph = font["glyf"]["H"]
+    coordinates, _, _ = h_glyph.getCoordinates(font["glyf"])
+    vertical = round(abs(coordinates[2][0] - coordinates[1][0]))
+    y_values = sorted({round(y) for _, y in coordinates})
+    horizontal = y_values[-2] - y_values[1]
+    return vertical, horizontal
+
+
+def _stabilize_preserved_t(font, glyph) -> None:
+    vertical_stem, horizontal_stroke = _h_strokes(font)
+    points = glyph.coordinates
+
+    center_x = sum(points[index][0] for index in (7, 8, 9, 10)) / 4
+    left = round(center_x - vertical_stem / 2)
+    right = round(center_x + vertical_stem / 2)
+    for index in (7, 8):
+        points[index] = (left, points[index][1])
+    for index in (9, 10):
+        points[index] = (right, points[index][1])
+
+    cap_y = round((points[8][1] + points[9][1]) / 2)
+    points[8] = (points[8][0], cap_y)
+    points[9] = (points[9][0], cap_y)
+
+    crossbar_top = round(
+        sum(points[index][1] for index in (6, 7, 10, 11)) / 4
+    )
+    for index in (6, 7, 10, 11):
+        points[index] = (points[index][0], crossbar_top)
+    crossbar_bottom = crossbar_top - horizontal_stroke
+    for index in (4, 5, 12, 13):
+        points[index] = (points[index][0], crossbar_bottom)
+
+    for index in (16, 17, 18):
+        points[index] = (points[index][0], horizontal_stroke)
+    terminal_x = round((points[18][0] + points[19][0]) / 2)
+    points[18] = (terminal_x, horizontal_stroke)
+    points[19] = (terminal_x, 0)
+
+
+def _stabilize_preserved_r(font, glyph) -> None:
+    vertical_stem, _ = _h_strokes(font)
+    points = glyph.coordinates
+
+    cap_y = max(points[index][1] for index in (4, 5))
+    points[0] = (points[0][0], cap_y)
+    points[1] = (points[1][0], cap_y)
+    departure_x = points[1][0] + max(6, round(vertical_stem * 0.12))
+    points[2] = (departure_x, cap_y)
+    points[3] = (max(points[3][0], departure_x + 1), cap_y)
+
+    terminal_inner = points[10]
+    shoulder_inner = points[14]
+    for index, fraction in zip((11, 12, 13), (0.25, 0.5, 0.75)):
+        points[index] = (
+            round(
+                terminal_inner[0]
+                + (shoulder_inner[0] - terminal_inner[0]) * fraction
+            ),
+            round(
+                terminal_inner[1]
+                + (shoulder_inner[1] - terminal_inner[1]) * fraction
+            ),
+        )
+
+
+def _stabilize_preserved_ascender(font, name: str, glyph) -> None:
+    _, horizontal_stroke = _h_strokes(font)
+    points = glyph.coordinates
+
+    if name == "f":
+        top = round(sum(points[index][1] for index in (7, 8, 9)) / 3)
+        bottom = top - horizontal_stroke
+        for index in (7, 8, 9):
+            points[index] = (points[index][0], top)
+        for index in (10, 11, 12):
+            points[index] = (points[index][0], bottom)
+    elif name == "l":
+        top = round((points[5][1] + points[6][1]) / 2)
+        bottom = top - horizontal_stroke
+        for index in (5, 6):
+            points[index] = (points[index][0], top)
+        for index in (3, 4):
+            points[index] = (points[index][0], bottom)
+
+
+def _stabilize_reference_j(font, glyph) -> None:
+    _, horizontal_stroke = _h_strokes(font)
+    points = glyph.coordinates
+
+    bar_top = round((points[9][1] + points[10][1]) / 2)
+    bar_bottom = bar_top - horizontal_stroke
+    points[7] = (points[6][0], bar_bottom)
+    points[8] = (points[8][0], bar_bottom)
+    points[9] = (points[8][0], bar_top)
+    right_edge = round((points[10][0] + points[11][0]) / 2)
+    points[10] = (right_edge, bar_top)
+    points[11] = (right_edge, points[11][1])
+
+    terminal_bottom = round((points[0][1] + points[15][1]) / 2)
+    terminal_top = round((points[1][1] + points[2][1]) / 2)
+    points[0] = (points[0][0], terminal_bottom)
+    points[15] = (points[15][0], terminal_bottom)
+    points[1] = (points[1][0], terminal_top)
+    points[2] = (points[2][0], terminal_top)
+    _reshape_square_contour(
+        glyph,
+        1,
+        size=_contour_square_size(glyph, 1),
+        top=LOWERCASE_ASCENDER_HEIGHT,
+    )
+
+
+def _stabilize_reference_shape(name: str, glyph) -> None:
+    points = glyph.coordinates
+
+    if name == "K":
+        x_min = min(x for x, _ in points)
+        x_max = max(x for x, _ in points)
+        target_min = 18
+        target_max = ADVANCE - 18
+        target_width = target_max - target_min
+        width = x_max - x_min
+        factor = min(1, target_width / width)
+        source_center = (x_min + x_max) / 2
+        target_center = (target_min + target_max) / 2
+        for index, (x, y) in enumerate(points):
+            points[index] = (
+                round(target_center + (x - source_center) * factor),
+                y,
+            )
+
+    elif name == "J":
+        terminal_y = round((points[6][1] + points[7][1]) / 2)
+        points[6] = (points[6][0], terminal_y)
+        points[7] = (points[7][0], terminal_y)
+        control_min = min(points[8][0], points[10][0])
+        control_max = max(points[8][0], points[10][0])
+        points[9] = (
+            min(control_max, max(control_min, points[9][0])),
+            points[9][1],
+        )
+
+    elif name == "S":
+        bottom_terminal = round((points[0][1] + points[1][1]) / 2)
+        top_terminal = round((points[31][1] + points[32][1]) / 2)
+        points[0] = (points[0][0], bottom_terminal)
+        points[1] = (points[1][0], bottom_terminal)
+        points[31] = (points[31][0], top_terminal)
+        points[32] = (points[32][0], top_terminal)
+        for index in (24, 25, 27, 28):
+            points[index] = (points[index][0], min(CAP_HEIGHT, points[index][1]))
+        for index in (54, 55, 57, 58):
+            points[index] = (points[index][0], max(0, points[index][1]))
+
+    elif name == "semicolon":
+        tail = list(_contour_ranges(glyph)[1])
+        lower_y = round((points[tail[0]][1] + points[tail[3]][1]) / 2)
+        upper_y = round((points[tail[1]][1] + points[tail[2]][1]) / 2)
+        for index in (tail[0], tail[3]):
+            points[index] = (points[index][0], lower_y)
+        for index in (tail[1], tail[2]):
+            points[index] = (points[index][0], upper_y)
+
+
+def install_preserved_master_glyphs(
+    font,
+    weight: float,
+    opsz: float,
+) -> None:
+    glyphs = font["glyf"]
+    for glyph_name in PRESERVED_MASTER_GLYPH_NAMES:
+        glyph = _master_outline(glyph_name, weight)
+        _apply_signature_optical_geometry(glyph_name, glyph, opsz)
+        if glyph_name == "t":
+            _stabilize_preserved_t(font, glyph)
+        elif glyph_name == "r":
+            _stabilize_preserved_r(font, glyph)
+        elif glyph_name in {"f", "l"}:
+            _stabilize_preserved_ascender(font, glyph_name, glyph)
+        glyph.recalcBounds(glyphs)
+        glyphs[glyph_name] = glyph
+        font["hmtx"].metrics[glyph_name] = (ADVANCE, glyph.xMin)
 
 
 def _representative_chars(font) -> dict[str, str]:
@@ -653,28 +906,3 @@ def apply_optical_geometry(
         glyph.coordinates = type(glyph.coordinates)(coordinates)
         glyph.recalcBounds(glyphs)
         hmtx.metrics[glyph_name] = (ADVANCE, glyph.xMin)
-
-
-def stabilize_lowercase_t(font, weight: float, opsz: float) -> None:
-    """Keep the t ascender rectangular at the light end of the axis."""
-    glyphs = font["glyf"]
-    glyph = glyphs["t"]
-    assert not glyph.isComposite()
-    assert len(glyph.coordinates) == 20
-    center_x = (
-        glyph.coordinates[8][0] + glyph.coordinates[9][0]
-    ) / 2
-    width = stem_for_weight(weight) * optical_value(
-        opsz,
-        1.010,
-        1,
-        0.980,
-    )
-    left = round(center_x - width / 2)
-    right = round(center_x + width / 2)
-    for index in (7, 8):
-        glyph.coordinates[index] = (left, glyph.coordinates[index][1])
-    for index in (9, 10):
-        glyph.coordinates[index] = (right, glyph.coordinates[index][1])
-    glyph.recalcBounds(glyphs)
-    font["hmtx"].metrics["t"] = (ADVANCE, glyph.xMin)

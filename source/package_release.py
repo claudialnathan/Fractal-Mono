@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-VERSION = "1.300"
+VERSION = "1.303"
 OUTPUT = PROJECT / "archive" / f"CLNMono-v{VERSION}.zip"
 FILES = (
     "README.md",

@@ -25,7 +25,7 @@ VARIABLE = DESKTOP / "CLNMono-Variable.ttf"
 BUILD_REPORT = PROJECT / "build-report.json"
 PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.252.zip"
 
-VERSION = "1.300"
+VERSION = "1.303"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -36,6 +36,7 @@ TEXT_OPSZ = 9
 DEFAULT_OPSZ = 14
 DISPLAY_OPSZ = 72
 REGULAR_STEM_RANGE = range(77, 84)
+NAMED_WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
 ALWAYS_LITERAL_LIGATURE_SEQUENCES = {"/\\", "\\/", "|||"}
 HINTING_TABLES = {"cvt ", "fpgm", "prep", "hdmx", "LTSH", "VDMX"}
 
@@ -46,7 +47,10 @@ CUSTOM_TOPOLOGY = {
     "M": (1, 25),
     "W": (1, 31),
     "S": (1, 61),
+    "f": (1, 20),
+    "l": (1, 10),
     "t": (1, 20),
+    "r": (1, 28),
     "exclam": (2, 10),
     "question": (2, 33),
     "asciicircum": (1, 8),
@@ -385,7 +389,7 @@ def assert_default_preservation(variable: TTFont) -> int:
             )
             preserved.add(glyph_name)
 
-    for glyph_name in ("k", "r", "w"):
+    for glyph_name in ("k", "w"):
         for weight in (100, 400, 800):
             current_instance = instantiateVariableFont(
                 variable,
@@ -405,6 +409,56 @@ def assert_default_preservation(variable: TTFont) -> int:
                 weight,
             )
     return len(preserved)
+
+
+def assert_round_dotted_bowls_preserved(variable: TTFont) -> None:
+    """Protect established bowls while allowing only their final dot to change."""
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.252 regression archive"
+    with ZipFile(PREVIOUS_RELEASE) as archive:
+        previous = TTFont(
+            BytesIO(
+                archive.read(
+                    "fonts/desktop/CLNMono-Variable[wght].ttf"
+                )
+            )
+        )
+
+    for weight in (100, 400, 800):
+        current_instance = instantiateVariableFont(
+            variable,
+            {"wght": weight, "opsz": DEFAULT_OPSZ},
+            inplace=False,
+        )
+        previous_instance = instantiateVariableFont(
+            previous,
+            {"wght": weight},
+            inplace=False,
+        )
+        for glyph_name in ("O", "o", "zero"):
+            current = current_instance["glyf"][glyph_name]
+            old = previous_instance["glyf"][glyph_name]
+            current_dot_start = current.endPtsOfContours[-2] + 1
+            old_dot_start = old.endPtsOfContours[-2] + 1
+            assert current_dot_start == old_dot_start, (
+                glyph_name,
+                weight,
+                "retained contour topology",
+            )
+            for index in range(current_dot_start):
+                assert math.dist(
+                    current.coordinates[index],
+                    old.coordinates[index],
+                ) <= 1.1, (glyph_name, weight, index)
+                assert (current.flags[index] & 1) == (old.flags[index] & 1), (
+                    glyph_name,
+                    weight,
+                    index,
+                    "curve flag",
+                )
+            assert any(
+                not (current.flags[index] & 1)
+                for index in range(current_dot_start)
+            ), (glyph_name, weight, "rounded contours lost")
 
 
 def main() -> None:
@@ -608,9 +662,24 @@ def main() -> None:
     cmap = variable.getBestCmap()
     axis_grid = [
         (weight, opsz)
-        for weight in (100, 300, 400, 500, 800)
+        for weight in NAMED_WEIGHTS
         for opsz in (TEXT_OPSZ, DEFAULT_OPSZ, DISPLAY_OPSZ)
     ]
+    default_ascender_strokes = {}
+    for weight in NAMED_WEIGHTS:
+        instance = instantiateVariableFont(
+            variable,
+            {"wght": weight, "opsz": DEFAULT_OPSZ},
+            inplace=False,
+        )
+        glyphs = instance["glyf"]
+        f_coordinates, _, _ = glyphs["f"].getCoordinates(glyphs)
+        l_coordinates, _, _ = glyphs["l"].getCoordinates(glyphs)
+        default_ascender_strokes[weight] = (
+            round(f_coordinates[9][1] - f_coordinates[10][1]),
+            round(l_coordinates[5][1] - l_coordinates[4][1]),
+        )
+
     for weight, opsz in axis_grid:
         instance = instantiateVariableFont(
             variable,
@@ -666,6 +735,176 @@ def main() -> None:
             opsz,
             "t crossbar",
         )
+        t_crossbar_top = round(t_coordinates[6][1])
+        assert all(
+            round(t_coordinates[index][1]) == t_crossbar_top
+            for index in (7, 10, 11)
+        ), (weight, opsz, "t crossbar top")
+        t_crossbar_bottom = round(t_coordinates[4][1])
+        assert all(
+            round(t_coordinates[index][1]) == t_crossbar_bottom
+            for index in (5, 12, 13)
+        ), (weight, opsz, "t crossbar bottom")
+
+        h_coordinates, _, _ = instance["glyf"]["H"].getCoordinates(
+            instance["glyf"]
+        )
+        h_y = sorted({round(y) for _, y in h_coordinates})
+        h_horizontal_stroke = h_y[-2] - h_y[1]
+        assert t_crossbar_top - t_crossbar_bottom == h_horizontal_stroke, (
+            weight,
+            opsz,
+            "t/H horizontal stroke",
+        )
+        t_foot_top = round(t_coordinates[17][1])
+        assert all(
+            round(t_coordinates[index][1]) == t_foot_top
+            for index in (16, 17, 18)
+        ), (weight, opsz, "t foot top")
+        assert t_foot_top == h_horizontal_stroke, (
+            weight,
+            opsz,
+            "t/H foot stroke",
+        )
+        assert round(t_coordinates[18][0]) == round(t_coordinates[19][0]), (
+            weight,
+            opsz,
+            "t foot terminal",
+        )
+
+        j_coordinates, _, _ = instance["glyf"]["j"].getCoordinates(
+            instance["glyf"]
+        )
+        assert round(j_coordinates[7][1]) == round(j_coordinates[8][1]), (
+            weight,
+            opsz,
+            "j flag bottom",
+        )
+        assert round(j_coordinates[9][1]) == round(j_coordinates[10][1]), (
+            weight,
+            opsz,
+            "j flag top",
+        )
+        assert round(j_coordinates[8][0]) == round(j_coordinates[9][0]), (
+            weight,
+            opsz,
+            "j flag left edge",
+        )
+        assert round(j_coordinates[10][0]) == round(j_coordinates[11][0]), (
+            weight,
+            opsz,
+            "j flag right edge",
+        )
+        assert abs(
+            round(j_coordinates[9][1] - j_coordinates[8][1])
+            - h_horizontal_stroke
+        ) <= 2, (weight, opsz, "j/H horizontal stroke")
+        assert round(j_coordinates[0][1]) == round(j_coordinates[15][1]), (
+            weight,
+            opsz,
+            "j terminal bottom",
+        )
+        assert round(j_coordinates[1][1]) == round(j_coordinates[2][1]), (
+            weight,
+            opsz,
+            "j terminal top",
+        )
+
+        j_cap = instance["glyf"]["J"].coordinates
+        assert round(j_cap[6][1]) == round(j_cap[7][1]), (
+            weight,
+            opsz,
+            "J terminal",
+        )
+        assert min(j_cap[8][0], j_cap[10][0]) - 1 <= j_cap[9][0] <= max(
+            j_cap[8][0],
+            j_cap[10][0],
+        ) + 1, (weight, opsz, "J terminal control reversal")
+
+        k_coordinates = instance["glyf"]["K"].coordinates
+        assert (
+            k_coordinates[3][0]
+            <= k_coordinates[4][0]
+            <= k_coordinates[5][0]
+            <= k_coordinates[6][0]
+            < k_coordinates[9][0]
+        ), (weight, opsz, "K upper bridge reversal")
+        assert (
+            k_coordinates[13][0]
+            <= k_coordinates[12][0]
+            < k_coordinates[9][0]
+        ), (weight, opsz, "K lower bridge reversal")
+
+        s_coordinates = instance["glyf"]["S"].coordinates
+        assert round(s_coordinates[0][1]) == round(s_coordinates[1][1]), (
+            weight,
+            opsz,
+            "S bottom terminal",
+        )
+        assert round(s_coordinates[31][1]) == round(s_coordinates[32][1]), (
+            weight,
+            opsz,
+            "S top terminal",
+        )
+        assert all(
+            0 <= s_coordinates[index][1] <= CAP_HEIGHT
+            for index in (24, 25, 27, 28, 54, 55, 57, 58)
+        ), (weight, opsz, "S hard-zone overshoot")
+
+        r_coordinates = instance["glyf"]["r"].coordinates
+        assert round(r_coordinates[0][1]) == round(r_coordinates[1][1]), (
+            weight,
+            opsz,
+            "r stem cap",
+        )
+        assert all(
+            r_coordinates[current][0] > r_coordinates[following][0]
+            for current, following in zip(
+                (10, 11, 12, 13, 14, 15),
+                (11, 12, 13, 14, 15, 16),
+            )
+        ), (weight, opsz, "r inner shoulder fold")
+        assert all(
+            r_coordinates[current][1] < r_coordinates[following][1]
+            for current, following in zip(
+                (10, 11, 12, 13, 14, 15),
+                (11, 12, 13, 14, 15, 16),
+            )
+        ), (weight, opsz, "r inner shoulder bump")
+
+        semicolon_tail = contour_signature(instance, "semicolon", 1)
+        assert len({x for x, _ in semicolon_tail}) > 2, (
+            weight,
+            opsz,
+            "semicolon tail was squared",
+        )
+        assert len({y for _, y in semicolon_tail}) == 2, (
+            weight,
+            opsz,
+            "semicolon tail lost its two flat ends",
+        )
+
+        f_coordinates, _, _ = instance["glyf"]["f"].getCoordinates(
+            instance["glyf"]
+        )
+        l_coordinates, _, _ = instance["glyf"]["l"].getCoordinates(
+            instance["glyf"]
+        )
+        ascender_strokes = (
+            round(f_coordinates[9][1] - f_coordinates[10][1]),
+            round(l_coordinates[5][1] - l_coordinates[4][1]),
+        )
+        assert all(
+            abs(current - default) <= 1
+            for current, default in zip(
+                ascender_strokes,
+                default_ascender_strokes[weight],
+            )
+        ), (weight, opsz, "f/l optical-size stroke drift")
+        assert all(
+            -1 <= h_horizontal_stroke - stroke <= 25
+            for stroke in ascender_strokes
+        ), (weight, opsz, "f/l top stroke balance")
         assert_clean_contour(instance, "T", 0)
 
         for glyph_name, contour_indices in SQUARE_CONTOURS.items():
@@ -674,7 +913,7 @@ def main() -> None:
 
         for glyph_name in ("J", "j", "K", "M", "W", "S"):
             bounds = glyph_bounds(instance, glyph_name)
-            assert -100 <= bounds[0] <= bounds[2] <= ADVANCE + 100, (
+            assert -5 <= bounds[0] <= bounds[2] <= ADVANCE + 5, (
                 glyph_name,
                 weight,
                 opsz,
@@ -726,15 +965,10 @@ def main() -> None:
         {"wght": 800, "opsz": DEFAULT_OPSZ},
         inplace=False,
     )
-    assert glyph_bounds(extra_bold, "W") == (15, 0, 564, CAP_HEIGHT)
-    assert glyph_bounds(extra_bold, "M") == (42, 0, 537, CAP_HEIGHT)
-    assert glyph_bounds(extra_bold, "K") == (24, 0, 552, CAP_HEIGHT)
-    assert glyph_bounds(extra_bold, "asciicircum") == (
-        92,
-        389,
-        487,
-        CAP_HEIGHT,
-    )
+    for glyph_name in ("W", "M", "K", "asciicircum"):
+        bounds = glyph_bounds(extra_bold, glyph_name)
+        assert 0 <= bounds[0] < bounds[2] <= ADVANCE
+        assert bounds[3] == CAP_HEIGHT
 
     h_coordinates, _, _ = default["glyf"]["H"].getCoordinates(
         default["glyf"]
@@ -808,6 +1042,7 @@ def main() -> None:
             )
 
     preserved_count = assert_default_preservation(variable)
+    assert_round_dotted_bowls_preserved(variable)
 
     print(f"PASS: {len(font_paths)} font files parse successfully")
     print("PASS: build report size/hash manifest matches all release files")
@@ -819,10 +1054,14 @@ def main() -> None:
     print("PASS: Text/Auto/Display masters set x-height to 540/528/500 with cap height fixed")
     print("PASS: J/j/K/M/W/S and punctuation designs interpolate at both axes")
     print("PASS: Thin and ExtraBold drawings retain open counters and cell containment")
-    print("PASS: lowercase t keeps a flat cap and parallel ascender edges from Thin onward")
+    print("PASS: lowercase t keeps a flat cap, parallel ascender, and H-matched crossbar/foot")
+    print("PASS: r, J/j, K, and S keep monotone joins and uniform terminals at every named weight")
+    print("PASS: lowercase f/l raised terminals preserve their local stroke through opsz")
     print("PASS: every square dot uses a clean native four-point contour")
     print("PASS: custom outlines contain no duplicate, closing, or zero-area contours")
-    print("PASS: O/o/zero, i/j marks, diaeresis, dot-below, punctuation, and ellipsis use square dots")
+    print("PASS: O/o/zero preserve their archived round bowls and replace only the final dot contour")
+    print("PASS: i/j marks, diaeresis, dot-below, punctuation, and ellipsis use square dots")
+    print("PASS: semicolon keeps its tapered tail instead of squaring it")
     print(f"PASS: {len(ligature_names)} programming glyphs retain one-cell advances")
     print("PASS: 150 programming ligatures remain optional under dlig; 3 stay literal")
     print("PASS: four-character repeats remain literal instead of partially ligating")
