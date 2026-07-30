@@ -120,17 +120,18 @@ optical sizes, as are `W`, `k`, `K`, and `M`.
   addressed: correcting it means pinning the angle, which moves more of the
   approved drawing than thickness alone.
 
-## Open, reported every run
+## The clipping box, fixed in 1.421
 
-`usWinAscent` is 1000 and `usWinDescent` 300, but box-drawing ink reaches 1009 and
--384 (`uni2502` and its neighbours). Those glyphs are supposed to pass the em box
-so a vertical rule joins the row above and below, but the win metrics are the
-clipping box on legacy Windows rendering, so a TUI border could lose a pixel
-there. Raising them to 1010/385 covers it, and because `USE_TYPO_METRICS` is set,
-every conforming application would keep the line height it has now — only
-applications that ignore that flag would space lines from 1.30 em to 1.40 em.
-Left as it is because vertical metrics affect layout everywhere and nothing on
-macOS is affected; `validate_geometry.py` reports it on every run.
+`usWinAscent` was 1000 and `usWinDescent` 300 — the em box — while box-drawing ink
+reaches 1009 and -384 (`uni2502` and its neighbours). Those glyphs are supposed to
+pass the em box so a vertical rule joins the row above and below, but the win
+metrics are the clipping box under legacy Windows rendering, so a TUI border could
+lose a pixel there.
+
+Both are now taken from measured ink across 15 weights by 4 optical sizes. No
+outline changed, and the typo and hhea metrics stayed at 950/-250, so line spacing
+is identical anywhere that honours `USE_TYPO_METRICS`, which this font sets. The
+gate now fails rather than warns if ink escapes the box.
 
 Text glyphs reach -253 and 959 against typo metrics of -250 and 950. Three and
 nine units of overhang on a `line-height: 1` box is normal and needs nothing.

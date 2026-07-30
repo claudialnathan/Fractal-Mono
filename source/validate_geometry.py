@@ -497,13 +497,16 @@ def main() -> int:
                 if box[3] > highest:
                     highest, highest_at = box[3], glyph_name
     if lowest < -os2.usWinDescent or highest > os2.usWinAscent:
-        notes.append(
+        failures.append(
             f"ink reaches {highest:.0f} ({highest_at}) and {lowest:.0f} ({lowest_at}) "
-            f"against usWinAscent {os2.usWinAscent} / usWinDescent -{os2.usWinDescent}. "
-            "Box-drawing glyphs are meant to pass the em box so they tile, but legacy "
-            "Windows rendering clips to the win metrics. Raising them to "
-            f"{int(highest) + 1}/{int(-lowest) + 1} would cover it; USE_TYPO_METRICS is "
-            "on, so conforming apps would keep the same line height"
+            f"but the OS/2 clipping box is usWinAscent {os2.usWinAscent} / "
+            f"usWinDescent -{os2.usWinDescent}; legacy Windows rendering would clip it. "
+            f"Set them to {int(highest) + 1}/{int(-lowest) + 1}"
+        )
+    else:
+        notes.append(
+            f"ink fits the clipping box: {highest:.0f} / {lowest:.0f} inside "
+            f"{os2.usWinAscent} / -{os2.usWinDescent}"
         )
 
     print(f"checked {len(encoded)} encoded glyphs across "

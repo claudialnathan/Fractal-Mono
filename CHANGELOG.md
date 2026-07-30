@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.421
+
+- Set `usWinAscent`/`usWinDescent` from measured ink (1009/384) instead of the em
+  box (1000/300). Box-drawing glyphs deliberately pass the em box so a vertical
+  rule joins the rows above and below, and those two fields are the clipping box
+  under legacy Windows rendering, so `uni2502` and its neighbours could lose a
+  pixel there. No outline changed, and the typo and hhea metrics are untouched, so
+  line spacing is identical everywhere that honours `USE_TYPO_METRICS` — which is
+  set. Only applications that ignore the flag space lines differently, and only on
+  Windows.
+- `validate_geometry.py` now fails if any ink falls outside the clipping box
+  rather than reporting it.
+
 ## 1.420
 
 - The counter dot in `O`, `o` and `zero` is a circle again, built as the same

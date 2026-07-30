@@ -43,7 +43,7 @@ import stroke_system
 
 FAMILY = "Fractal Mono"
 VENDOR_ID = "FRCT"
-VERSION = "1.420"
+VERSION = "1.421"
 UPM = 1000
 ADVANCE = 579
 
@@ -70,8 +70,13 @@ DESCENDER_SCALE = 195 / 180
 SOURCE_REGULAR_WEIGHT = 310
 TYPO_ASCENDER = 950
 TYPO_DESCENDER = -250
-WIN_ASCENDER = 1000
-WIN_DESCENDER = 300
+# The clipping box, measured from actual ink across the whole design space rather
+# than set to the em box. Box-drawing glyphs deliberately pass the em box so a
+# vertical rule joins the rows above and below, and legacy Windows rendering clips
+# to these two fields. USE_TYPO_METRICS is set, so line spacing still comes from
+# the typo metrics everywhere that honours it.
+WIN_ASCENDER = 1009
+WIN_DESCENDER = 384
 
 # Custom-glyph stem widths at the wght axis extremes and default.
 STEMS_LOWER = (50, 80, 150)

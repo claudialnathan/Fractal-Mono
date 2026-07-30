@@ -33,7 +33,7 @@ BUILD_REPORT = PROJECT / "build-report.json"
 PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.305.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.420"
+VERSION = "1.421"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
