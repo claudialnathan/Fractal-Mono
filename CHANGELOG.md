@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.420
+
+- The counter dot in `O`, `o` and `zero` is a circle again, built as the same
+  twelve-point quadratic it was drawn as before the square pass generalised to
+  every dot-like mark. Diameter is set so the dot keeps the ink weight the square
+  had, which lands on 119 units at Regular - the width it was originally drawn at.
+- Free-standing dots and the `i`/`j` tittles stay square. Only these three
+  counters are round.
+
 ## 1.410
 
 - Rebuilt the option, command and return key symbols from the designer's own

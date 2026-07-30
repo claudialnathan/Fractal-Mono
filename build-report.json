@@ -1,6 +1,6 @@
 {
   "family": "Fractal Mono",
-  "version": "1.410",
+  "version": "1.420",
   "format": "TrueType outlines; variable wght and opsz axes plus static instances",
   "metrics": {
     "unitsPerEm": 1000,
@@ -527,124 +527,124 @@
   },
   "files": {
     "fonts/desktop/FractalMono-Variable.ttf": {
-      "bytes": 593452,
-      "sha256": "c27aa377faf12e6109eec72def548f89cefb9b131b9cfa60c209950f924e8a3b"
+      "bytes": 593916,
+      "sha256": "670a7e1dae2a8e44867e6a1cb9f50aa8d8a8a71b9e65fd7e746c3d98d268a43c"
     },
     "fonts/desktop/FractalMono-Thin.ttf": {
-      "bytes": 194136,
-      "sha256": "ea0f222b5bdb8aa5b9586405c9bb4aadc2dcdc242babb2ebe2001f538b4044eb"
+      "bytes": 194192,
+      "sha256": "c661a0d65eaf0ffb74098d51c73f66d32096b6b0d57604a9720d7e023cabcc0e"
     },
     "fonts/desktop/FractalMono-ExtraLight.ttf": {
-      "bytes": 194176,
-      "sha256": "80d2228cc513df4e321a0ca435027296de4ad9035517e825a2ec5fb84b49cb97"
+      "bytes": 194232,
+      "sha256": "6d987f11889807e60d3fbacc3455c58984cbd89732412a34f2c72ddb29a858c4"
     },
     "fonts/desktop/FractalMono-Light.ttf": {
-      "bytes": 194072,
-      "sha256": "7529b34dfa0ffe794b5d1e9667580cd83d3d294fa667e1f2ec15acef331a849f"
+      "bytes": 194128,
+      "sha256": "ef12474f1a88be81150fa37aba605c08b78abb785f5ef4a973c3f9bc5cb6b5c5"
     },
     "fonts/desktop/FractalMono-Regular.ttf": {
-      "bytes": 193968,
-      "sha256": "95450c2518f0bb590dca4d76553058ff909de0161f2ac2ad7472b8a88bbd0f3b"
+      "bytes": 194024,
+      "sha256": "53702a78dad76b78dca5821197236802c01021046b17245bdd3f0a1b7db08746"
     },
     "fonts/desktop/FractalMono-Book.ttf": {
-      "bytes": 193900,
-      "sha256": "fe51bd7257d88c006c06f8755c8341926ec586fa932455ab0e5d828a1df15978"
+      "bytes": 193956,
+      "sha256": "c06e2f140dececbab753024dc5b419969311dd83eacb75eecd0bb0766a4102c1"
     },
     "fonts/desktop/FractalMono-Medium.ttf": {
-      "bytes": 193928,
-      "sha256": "fbf4a21c18f2e126e45550101aa3d40b5daa3d115336b10393cb69660919b1e7"
+      "bytes": 193984,
+      "sha256": "7c8d26b649f0b8d325b9d8beb6cdd389cb003ef47bc2fe411c95e4ed9038296d"
     },
     "fonts/desktop/FractalMono-SemiBold.ttf": {
-      "bytes": 194016,
-      "sha256": "ad5a27a40f443432b906ada325c82666742ea7f14f7012a915767510b2c0c42b"
+      "bytes": 194072,
+      "sha256": "e4fae8673dc40ed0f40634dc8b44cfbd89aad461b59975f04b9e69f47b57115b"
     },
     "fonts/desktop/FractalMono-Bold.ttf": {
-      "bytes": 193900,
-      "sha256": "ecccdfab8716fb09fe2a432808f3298789605b2f5901ad31234d1de65464b3fe"
+      "bytes": 193956,
+      "sha256": "85cf32400a2c896df0392a4c88c1e923ae655a9201d152a85217b67159dd79f7"
     },
     "fonts/desktop/FractalMono-ExtraBold.ttf": {
-      "bytes": 193824,
-      "sha256": "d15e8e78c3ae02fd2486f07493b782bda4220758b8fe469ee7d26185a3cb2d65"
+      "bytes": 193880,
+      "sha256": "def0b3333a84317b49553fd1b191ac61913c3575c03d149fe3e15a88e910f4fa"
     },
     "fonts/web/FractalMono-Bold.woff": {
-      "bytes": 93816,
-      "sha256": "e0cffd5b092e184183403d0f0cddb30b58f09536c2e9712b93688b437b5f3b6f"
+      "bytes": 93840,
+      "sha256": "fbdb84e50b782e8a7e13cac9ef6300b2448a714b9da96d5bea39bafc7cadabfc"
     },
     "fonts/web/FractalMono-Bold.woff2": {
-      "bytes": 69224,
-      "sha256": "117b22a3e042ece32fbf6ca9b125a3e347685a685ebc67f06fa8d85611b32375"
+      "bytes": 69116,
+      "sha256": "a29901d7fbf53c7357a4d1ea4b42f4cd3dcd51510f8b9b19171abc2cf6bdd679"
     },
     "fonts/web/FractalMono-Book.woff": {
-      "bytes": 92676,
-      "sha256": "147a30522a810231dbf692540d4240c8d0db841210c030fa03f5e6a5a9dc74f1"
+      "bytes": 92700,
+      "sha256": "983002c674aececdcbcebe3495434fc763287dd2846894d3495cb1d6dd8e3b81"
     },
     "fonts/web/FractalMono-Book.woff2": {
-      "bytes": 68252,
-      "sha256": "ba2df6700154ca743b6f94b1870c79a240a7032831c340d977222fef1057d00b"
+      "bytes": 68164,
+      "sha256": "6cb4acc3b88ecea474a8e0c3aaff97fdca755a078062c4c8c9f09c83b65a14a6"
     },
     "fonts/web/FractalMono-ExtraBold.woff": {
-      "bytes": 93020,
-      "sha256": "d422bde60f5683844699d49e3059698f8ae505f21cf6dbbd5c39096a72e3617e"
+      "bytes": 93048,
+      "sha256": "e547d3375f554fcdc3a323dd51858c591bb51d074fd351bd629e8e801f7ee135"
     },
     "fonts/web/FractalMono-ExtraBold.woff2": {
-      "bytes": 68928,
-      "sha256": "2f0cadf76501a2043782a454865e8ace9b16d68e7ceb11a078ce7b564400a810"
+      "bytes": 68876,
+      "sha256": "1ba28cc7384cf383f9fa08093b6beba41fe258d1f41a9b9e7054d4f0e21092d0"
     },
     "fonts/web/FractalMono-ExtraLight.woff": {
-      "bytes": 92672,
-      "sha256": "e622578f34083dd06f8cf9be889a12987e2c9c7ae526018de2ae8d770527ad61"
+      "bytes": 92688,
+      "sha256": "cb0b2ac0be1b73343ae45e428b4671bd0d9e19511744fd4fd21fafd065acaad3"
     },
     "fonts/web/FractalMono-ExtraLight.woff2": {
-      "bytes": 68504,
-      "sha256": "4e809be13b9136ad429e44c60a590581657de0314ba95e47d07ce3e15183f663"
+      "bytes": 68696,
+      "sha256": "5084ea557826189cde3ac6f3abe07a003d08f6250bfb2c3d0ffcc7a07593bb70"
     },
     "fonts/web/FractalMono-Light.woff": {
-      "bytes": 92576,
-      "sha256": "c3d5827f2face27220ac6e9baa7dc7c47559893c5fb31de688efb6a94f861866"
+      "bytes": 92608,
+      "sha256": "b61fe6331f3fdda4e00f85a3d152a580c179271a1170095c67561cdf33398a37"
     },
     "fonts/web/FractalMono-Light.woff2": {
-      "bytes": 68016,
-      "sha256": "433a499ede139edc7c698f07497ed4e680b66158b7688535702738c9f4c9d2d7"
+      "bytes": 68160,
+      "sha256": "acaa060f2280b6311cfdbe4d2452adcd26d99de6a38dff9cf410fbf953429d5b"
     },
     "fonts/web/FractalMono-Medium.woff": {
-      "bytes": 93260,
-      "sha256": "abc15b5d0d336d611dca4a4fe3753d3fc8d3cb13d66815158ba30b4c26f36ff9"
+      "bytes": 93284,
+      "sha256": "3fa1c82291276d68dc2cb5162282dcb9a67fd573c28ba11ddc01845b1a9dbca4"
     },
     "fonts/web/FractalMono-Medium.woff2": {
-      "bytes": 68856,
-      "sha256": "0fe8cf8234898807ffcccf5de700fa5c36c582e52f54a3e30f82082f6cd71971"
+      "bytes": 68828,
+      "sha256": "e6bb908ffb60aee7f0da68d2d416b085afb991e7221cfa4b9d37de1f3e4973bb"
     },
     "fonts/web/FractalMono-Regular.woff": {
-      "bytes": 92184,
-      "sha256": "9fdf3fcf53ee90123bb49516d807627fe68d03ae75e3a71c8d3bb2877e6fdd5e"
+      "bytes": 92204,
+      "sha256": "31bc3a1f0b0ffb2a48b7fe93260496f717e02e944e682723262c7c7fa490c193"
     },
     "fonts/web/FractalMono-Regular.woff2": {
-      "bytes": 67516,
-      "sha256": "2e5d737ed3a9dad2bd10a525dd43c9b1031f9ae66d31edf06a98cfb7e9319289"
+      "bytes": 67736,
+      "sha256": "16d7de000ccf9051c6918bb224506bfd27967046ab59166f4206a1a642f41b70"
     },
     "fonts/web/FractalMono-SemiBold.woff": {
-      "bytes": 93588,
-      "sha256": "e947affce78f586143cb8813a3fe0284920432c6f8398e27811970c79725566b"
+      "bytes": 93612,
+      "sha256": "6be785d703192d9b2a4bafc5acb216e855587612dcc00acd0b0943cc2414ad8c"
     },
     "fonts/web/FractalMono-SemiBold.woff2": {
-      "bytes": 68936,
-      "sha256": "98d6e6956650ef1614b195ae2bd9beb7d9718814dfc70222571b687dcbd9d0a7"
+      "bytes": 69196,
+      "sha256": "e51287fe6ce6313e40d459f0f6e4085a5fcbae94eab3291b9684d4f1b2f314fd"
     },
     "fonts/web/FractalMono-Thin.woff": {
-      "bytes": 92324,
-      "sha256": "3d0b96d0f726fb2c36cc190ec25e23f7f1a86c284491697c0d519b745f77ab40"
+      "bytes": 92348,
+      "sha256": "b8f3128d7a2f27989c80cb237ba97eb4a7914d43a0cfd548f38c492670e0ff27"
     },
     "fonts/web/FractalMono-Thin.woff2": {
-      "bytes": 68064,
-      "sha256": "cccf7ce7d7940826967852b0ec1fed3bc44ac6f42bfa973578ded8d52835225d"
+      "bytes": 68012,
+      "sha256": "be73f310ca3476d8d64622e9274f3664f708f011defbef0853d6ec0297082da1"
     },
     "fonts/web/FractalMono-Variable.woff": {
-      "bytes": 275452,
-      "sha256": "56cd100b9d56b180211bee1e9188a1e6426cf0f421b9f423283335be7b1fccc7"
+      "bytes": 275756,
+      "sha256": "4a341d6b644e2396fc39f44768346dbb78cd2a34a9dadd5b47ae3e56ded695cf"
     },
     "fonts/web/FractalMono-Variable.woff2": {
-      "bytes": 219332,
-      "sha256": "391c8970954eef0a3a9c4279e1cf12133a9000206b91d6bcb59c48d7790f4d3c"
+      "bytes": 219740,
+      "sha256": "4a398a037deb03f10c3d5b10a7c1d624756234e5b3c51bb46418f79982e054f1"
     }
   }
 }

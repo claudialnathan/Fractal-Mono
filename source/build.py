@@ -43,7 +43,7 @@ import stroke_system
 
 FAMILY = "Fractal Mono"
 VENDOR_ID = "FRCT"
-VERSION = "1.410"
+VERSION = "1.420"
 UPM = 1000
 ADVANCE = 579
 

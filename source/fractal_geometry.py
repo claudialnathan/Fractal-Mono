@@ -750,39 +750,89 @@ def fit_glyphs_to_cell(
 
 DOTTED_COUNTER_NAMES = frozenset({"O", "o", "zero"})
 
+# A circle of diameter d carries pi/4 of the ink of a d-wide square, so the
+# diameter grows to keep the dot's weight where the square pass had calibrated it.
+# At Regular this lands on 119 units, the width the dot was drawn at originally.
+ROUND_DOT_SCALE = 1.12
+# Two quadratic segments per quarter, with the implied on-curve point falling on
+# the circle. 0.4477 is the offset that minimises radial error.
+ROUND_DOT_CONTROL = 0.4477
 
-def centre_counter_dot(glyph) -> None:
-    """Sit the counter dot at the centre of the counter it lives in.
 
-    O and zero took their dot height from the upstream slashed zero, so the dot
-    sat 10 units above the counter centre and drifted with weight while the
-    lowercase o was centred correctly.
+def _circle_contour(center_x: float, center_y: float, radius: float, clockwise: bool):
+    """Twelve points: four on-curve extremes and two controls per quarter."""
+    control = radius * ROUND_DOT_CONTROL
+    points = [
+        ((center_x, center_y - radius), True),
+        ((center_x - control, center_y - radius), False),
+        ((center_x - radius, center_y - control), False),
+        ((center_x - radius, center_y), True),
+        ((center_x - radius, center_y + control), False),
+        ((center_x - control, center_y + radius), False),
+        ((center_x, center_y + radius), True),
+        ((center_x + control, center_y + radius), False),
+        ((center_x + radius, center_y + control), False),
+        ((center_x + radius, center_y), True),
+        ((center_x + radius, center_y - control), False),
+        ((center_x + control, center_y - radius), False),
+    ]
+    if not clockwise:
+        points = [points[0], *reversed(points[1:])]
+    return [((round(x), round(y)), on_curve) for (x, y), on_curve in points]
+
+
+def round_counter_dot(glyph) -> None:
+    """Draw the counter dot in O, o and zero as a circle, centred in its counter.
+
+    The free-standing dots and tittles stay square; only these three counters are
+    round, which is how they were drawn before the square pass generalised to
+    every dot-like mark.
     """
     ranges = _contour_ranges(glyph)
     if len(ranges) < 3:
         return
-    areas = sorted(
+    order = sorted(
         range(len(ranges)),
         key=lambda index: abs(_signed_area(glyph.coordinates, ranges[index])),
     )
-    dot, counter = areas[0], areas[-2]
-    counter_points = [glyph.coordinates[index] for index in ranges[counter]]
-    dot_points = [glyph.coordinates[index] for index in ranges[dot]]
+    dot_index, counter_index = order[0], order[-2]
+    dot = ranges[dot_index]
+    dot_points = [glyph.coordinates[index] for index in dot]
+    counter_points = [glyph.coordinates[index] for index in ranges[counter_index]]
 
-    def centre(points):
+    def extent(points):
         xs = [x for x, _ in points]
         ys = [y for _, y in points]
-        return (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        return min(xs), max(xs), min(ys), max(ys)
 
-    counter_x, counter_y = centre(counter_points)
-    dot_x, dot_y = centre(dot_points)
-    shift_x = round(counter_x - dot_x)
-    shift_y = round(counter_y - dot_y)
-    if not shift_x and not shift_y:
-        return
-    for index in ranges[dot]:
-        x, y = glyph.coordinates[index]
-        glyph.coordinates[index] = (x + shift_x, y + shift_y)
+    x_min, x_max, y_min, y_max = extent(dot_points)
+    radius = max(x_max - x_min, y_max - y_min) * ROUND_DOT_SCALE / 2
+    counter_x0, counter_x1, counter_y0, counter_y1 = extent(counter_points)
+    clockwise = _signed_area(glyph.coordinates, dot) < 0
+    circle = _circle_contour(
+        (counter_x0 + counter_x1) / 2,
+        (counter_y0 + counter_y1) / 2,
+        radius,
+        clockwise,
+    )
+
+    coordinates = list(glyph.coordinates)
+    flags = list(glyph.flags)
+    head_coords, head_flags = coordinates[: dot.start], flags[: dot.start]
+    tail_coords, tail_flags = coordinates[dot.stop :], flags[dot.stop :]
+    glyph.coordinates = GlyphCoordinates(
+        head_coords + [point for point, _ in circle] + tail_coords
+    )
+    glyph.flags = bytearray(
+        list(head_flags)
+        + [1 if on_curve else 0 for _, on_curve in circle]
+        + list(tail_flags)
+    )
+    shift = len(circle) - len(dot)
+    glyph.endPtsOfContours = [
+        endpoint + (shift if index >= dot_index else 0)
+        for index, endpoint in enumerate(glyph.endPtsOfContours)
+    ]
 
 
 def invert_glyph(source, *, center_y: float = CAP_HEIGHT / 2):
@@ -1004,7 +1054,7 @@ def install_preserved_master_glyphs(
         glyph = _master_outline(glyph_name, weight)
         _apply_signature_optical_geometry(glyph_name, glyph, opsz, weight)
         if glyph_name in DOTTED_COUNTER_NAMES:
-            centre_counter_dot(glyph)
+            round_counter_dot(glyph)
         if glyph_name == "t":
             _stabilize_preserved_t(font, glyph)
         elif glyph_name in {"f", "l"}:

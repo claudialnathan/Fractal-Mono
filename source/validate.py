@@ -33,7 +33,7 @@ BUILD_REPORT = PROJECT / "build-report.json"
 PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.305.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.410"
+VERSION = "1.420"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -83,9 +83,6 @@ SQUARE_CONTOURS = {
     "uni0307": (0,),
     "uni0308": (0, 1),
     "dotbelowcomb": (0,),
-    "zero": (2,),
-    "O": (2,),
-    "o": (2,),
     "ellipsis": (0, 1, 2),
 }
 INTENTIONAL_ROOTS = frozenset(
