@@ -32,6 +32,12 @@ source stays literal and every sequence keeps one advance per character. Longer
 repeats are guarded against partial ligation. Dotless `O o 0` under `ss03`;
 character variants, tabular figures, fractions, superiors, and inferiors.
 
+**Fitting.** Sidebearings are set per shape class — flat-sided letters at 0.132 of
+the cell, rounds tighter at 0.112 — so a round letter looks as evenly spaced as a
+flat one. `source/fitting.py` changes a letter's width by translating its outermost
+ink bands and stretching only the space between them, so stroke weights survive
+where a horizontal scale would have thinned them.
+
 **Details.** Dots on `i`, `j`, punctuation, and combining marks are exact squares
 built from one integer edge plus one integer size. The counter dots in `O`, `o`,
 and `0` are circles, centred in their counters at every weight and optical size.

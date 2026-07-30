@@ -37,6 +37,7 @@ from fractal_geometry import (
     fit_glyphs_to_cell,
     offset_glyph_stable,
 )
+import fitting
 import key_symbols
 import stroke_system
 from version import ARCHIVE_NAME, PACKAGE_VERSION, VERSION
@@ -87,6 +88,9 @@ WEIGHT_AXIS_SAMPLES = (100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 65
 # Filled during the build with the glyphs the cell fit had to recentre, so the
 # regression gate knows which outlines were expected to move.
 CELL_FITTED: set[str] = set()
+# Glyphs whose sidebearings the fitting pass moved; recorded so the regression gate
+# knows their outlines were expected to change.
+REFITTED: set[str] = set()
 
 # v1.240's contour-local tension experiment moved quadratic controls without
 # moving their implied on-curve joins. At display sizes this produced small
@@ -1741,6 +1745,10 @@ def make_optical_master(
     install_reference_glyphs(font, user_weight, opsz)
     install_square_marks(font, user_weight, opsz)
     install_square_ellipsis(font, user_weight, opsz)
+    REFITTED.update(fitting.apply(font))
+    # The dotless alternates copy their bowls from O, o and zero, so they are
+    # re-derived after the fitting pass has moved those sidebearings.
+    install_dotless_counter_glyphs(font)
     CELL_FITTED.update(fit_glyphs_to_cell(font))
     font.recalcBBoxes = True
     return font
@@ -2004,6 +2012,7 @@ def main() -> None:
         },
         "customProgrammingLigatures": sorted(CUSTOM_PROGRAMMING_LIGATURES),
         "cellFittedGlyphs": sorted(CELL_FITTED),
+        "refittedGlyphs": sorted(REFITTED),
         "instances": INSTANCES,
         "files": {
             str(path.relative_to(PROJECT)): {
