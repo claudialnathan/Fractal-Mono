@@ -33,7 +33,7 @@ BUILD_REPORT = PROJECT / "build-report.json"
 PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.305.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.400"
+VERSION = "1.410"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -107,6 +107,10 @@ INTENTIONAL_ROOTS = frozenset(
         "k",
         "w",
         "asterisk",
+        # Rebuilt in 1.400 from the designer's own vectors.
+        "uni2325",
+        "uni2318",
+        "uni23CE",
     }
     # Plus whatever the cell fit had to recentre, which the build records rather
     # than this file restating.

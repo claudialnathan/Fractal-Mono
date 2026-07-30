@@ -80,6 +80,12 @@ KNOWN_WEAK_INK = {"copyright": 0.44, "registered": 0.42}
 CELL_TOLERANCE = 12
 COMPOSITE_CELL_TOLERANCE = 24
 
+# The key symbols come from the designer's own vectors and hold their outer size
+# while the stroke grows, the way a letter holds its cap height. Bounds are
+# allowed a unit of rounding; the command symbol is deliberately wider than the
+# cell, which is why it is not gated on containment.
+KEY_SYMBOLS = ("uni2325", "uni2318", "uni23CE")
+
 
 class _Flatten(BasePen):
     def __init__(self, glyph_set, steps=8):
@@ -428,7 +434,34 @@ def main() -> int:
                     f"dots disagree at wght {weight} opsz {optical:g}: {sizes}"
                 )
 
-    # 6. the counter dots sit in the middle of their counters
+    # 6. the key symbols hold their outer size and never self-intersect
+    for glyph_name in KEY_SYMBOLS:
+        extents = set()
+        for weight in WEIGHT_SAMPLES:
+            shapes = contours_of(instance(weight), glyph_name)
+            if not shapes:
+                failures.append(f"{glyph_name} is missing at wght {weight}")
+                break
+            if self_intersections(shapes):
+                failures.append(f"{glyph_name} self-intersects at wght {weight}")
+            box = bounds(shapes)
+            extents.add((round(box[0]), round(box[2]), round(box[1]), round(box[3])))
+        if extents:
+            spread = max(
+                max(abs(a[index] - b[index]) for index in range(4))
+                for a in extents
+                for b in extents
+            )
+            # The command symbol is scaled back to its drawn size at each master,
+            # and that scale is not linear in weight, so blended locations land a
+            # few units off. Anything larger means the size is tracking weight.
+            if spread > 6:
+                failures.append(
+                    f"{glyph_name} outer size moves {spread} units across the axis; "
+                    "it should hold the size it was drawn at"
+                )
+
+    # 7. the counter dots sit in the middle of their counters
     for glyph_name in ("O", "o", "zero"):
         for optical in OPTICAL_SAMPLES:
             for weight in (100, 400, 800):

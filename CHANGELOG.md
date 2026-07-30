@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.410
+
+- Rebuilt the option, command and return key symbols from the designer's own
+  vectors, drawn at wght 600 for option and wght 500 for the other two.
+  `source/key_symbols.py` carries each drawing and reconstructs it as stroke
+  geometry, so it holds across the whole weight axis rather than only at the
+  weight it was made at. Reconstruction at the design weight reproduces each
+  supplied vector to within 1.6 units.
+- All three now hold their outer size while the stroke grows, the way a letter
+  holds its cap height. Previously command's and return's strokes barely moved
+  across the axis at all.
+- Option is 500 units wide against the previous 580, and return 557 against 634,
+  so both now sit inside the cell where they used to overhang. Command is 712
+  wide as drawn, which overhangs the 579 cell by 66 units each side.
+
 ## 1.400
 
 Renamed from CLN Mono to Fractal Mono. Family name, PostScript names, file names,

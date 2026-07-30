@@ -37,12 +37,13 @@ from fractal_geometry import (
     fit_glyphs_to_cell,
     offset_glyph_stable,
 )
+import key_symbols
 import stroke_system
 
 
 FAMILY = "Fractal Mono"
 VENDOR_ID = "FRCT"
-VERSION = "1.400"
+VERSION = "1.410"
 UPM = 1000
 ADVANCE = 579
 
@@ -1592,6 +1593,20 @@ def transform_weight_variable() -> TTFont:
     install_custom_variable_glyph(font, "k", build_lowercase_k, STEMS_LOWER)
     install_custom_variable_glyph(font, "r", build_lowercase_r, STEMS_LOWER)
     install_custom_variable_glyph(font, "w", build_lowercase_w, STEMS_LOWER)
+    # Option, command and return come from the designer's own vectors; see
+    # source/key_symbols.py for the drawings and how they carry across the axis.
+    install_custom_variable_glyph(
+        font, "uni2325", key_symbols.build_option, STEMS_LOWER
+    )
+    install_custom_variable_glyph(
+        font, "uni23CE", key_symbols.build_return, STEMS_LOWER
+    )
+    install_custom_variable_glyph(
+        font,
+        "uni2318",
+        partial(key_symbols.build_command, offset_glyph_stable=offset_glyph_stable),
+        STEMS_LOWER,
+    )
     for glyph_name, builder in CUSTOM_PROGRAMMING_LIGATURES.items():
         install_custom_variable_glyph(font, glyph_name, builder, STEMS_LOWER)
 
