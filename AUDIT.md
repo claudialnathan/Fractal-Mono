@@ -1,4 +1,4 @@
-# Audit behind 1.400
+# Audit
 
 Measurements taken from the release binaries with scanline geometry under the
 nonzero winding rule, and compared against Inter 4.1, ABC Diatype Mono (static

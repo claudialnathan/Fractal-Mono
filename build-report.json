@@ -527,8 +527,8 @@
   },
   "files": {
     "fonts/desktop/FractalMono-Variable.ttf": {
-      "bytes": 593916,
-      "sha256": "dfcbc2a00e5c4d3c4dd9aca7f7697fa5aba28a515b473502f80c23e187fe58ea"
+      "bytes": 593976,
+      "sha256": "245c21b7a189a9604ec51215a016af990fba39f6960a203731bca7437e5d1e68"
     },
     "fonts/desktop/FractalMono-Thin.ttf": {
       "bytes": 194192,
@@ -639,12 +639,12 @@
       "sha256": "1aa0f7c7cdbb516b6dc04c1cbf986a16ddb93f86e2d72463adb6a0681193482d"
     },
     "fonts/web/FractalMono-Variable.woff": {
-      "bytes": 275756,
-      "sha256": "955fb19c1441d38d5ecdb1fc2baae5787fac61f0d6a10b3cbaf30dde7d9e9aac"
+      "bytes": 275780,
+      "sha256": "abb9535d6c74d0c1944ad8eb719fb8463e8d263f46d423efeb0a3f36bce4967f"
     },
     "fonts/web/FractalMono-Variable.woff2": {
-      "bytes": 219780,
-      "sha256": "4acb12bc5e9d694f8b6ae87e2f45aa9eb362e99899e2a88be0ab8fb2e3cbba3e"
+      "bytes": 219580,
+      "sha256": "557224673142d868963d7795db51000c93a00857a24414288476683335ef42cb"
     }
   }
 }

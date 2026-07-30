@@ -39,11 +39,12 @@ from fractal_geometry import (
 )
 import key_symbols
 import stroke_system
+from version import ARCHIVE_NAME, PACKAGE_VERSION, VERSION
 
 
 FAMILY = "Fractal Mono"
 VENDOR_ID = "FRCT"
-VERSION = "1.421"
+
 UPM = 1000
 ADVANCE = 579
 
@@ -1379,10 +1380,14 @@ def set_family_names(font: TTFont, style: str, weight: int) -> None:
     )
     set_name(font, 1, legacy_family)
     set_name(font, 2, legacy_style)
-    set_name(font, 3, f"{VERSION};{VENDOR_ID.strip()};FractalMono-{ps_style}")
+    # The variable font takes its own PostScript name. Sharing the default
+    # instance's name is conventional when only one of the two is installed, but
+    # both are, and OpenType wants name ID 6 unique per installed face.
+    postscript_name = "FractalMono-Variable" if is_variable else f"FractalMono-{ps_style}"
+    set_name(font, 3, f"{VERSION};{VENDOR_ID.strip()};{postscript_name}")
     set_name(font, 4, f"{FAMILY} {style}")
     set_name(font, 5, f"Version {VERSION}")
-    set_name(font, 6, f"FractalMono-{ps_style}")
+    set_name(font, 6, postscript_name)
     set_name(font, 8, "Fractal")
     set_name(font, 9, "Claudia Nathan")
     set_name(

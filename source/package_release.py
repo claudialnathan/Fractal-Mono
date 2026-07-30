@@ -5,10 +5,11 @@ from __future__ import annotations
 
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from version import VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-VERSION = "1.305"
+
 OUTPUT = PROJECT / "archive" / f"FractalMono-v{VERSION}.zip"
 FILES = (
     "README.md",

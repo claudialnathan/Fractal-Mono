@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
+from version import VERSION
 
 PROJECT = Path(__file__).resolve().parents[1]
 DESKTOP = PROJECT / "fonts" / "desktop"
@@ -70,7 +71,7 @@ def specimen() -> Image.Image:
     y += 190
     draw.text(
         (MARGIN, y),
-        "v1.305 — wght 100–800 · opsz 9–72 · ligatures opt-in",
+        f"v{VERSION} — wght 100–800 · opsz 9–72 · ligatures opt-in",
         font=font("Regular", 34),
         fill=MUTED,
     )
@@ -115,7 +116,7 @@ def refinement() -> Image.Image:
     y = MARGIN
     draw.text(
         (MARGIN, y),
-        "Fractal Mono 1.305 · Claudia Nathan",
+        f"Fractal Mono {VERSION} · Claudia Nathan",
         font=font("Medium", 54),
         fill=INK,
     )

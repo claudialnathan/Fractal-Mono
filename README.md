@@ -92,7 +92,7 @@ The build is self-contained. Its OFL upstream binary and compatible signature-ma
 
 ## Scope
 
-Fractal Mono 1.305 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+Fractal Mono 1.421 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
 
 ## Licence
 

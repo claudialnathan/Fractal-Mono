@@ -8,5 +8,6 @@ tmp/
 *.log
 
 archive/*.zip
-!archive/FractalMono-v1.252.zip
-!archive/FractalMono-v1.300.zip
+!archive/CLNMono-v1.252.zip
+!archive/CLNMono-v1.300.zip
+!archive/CLNMono-v1.305.zip

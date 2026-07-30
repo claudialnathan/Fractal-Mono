@@ -38,6 +38,14 @@
     setText(`[data-fact="${name}"]`, value);
   });
   setText("[data-footer-version]", data.version);
+  // Derived from the built font so a release cannot leave these behind.
+  const bare = String(data.version).replace(/^Version\s+/, "");
+  document
+    .querySelectorAll("[data-release-version]")
+    .forEach((node) => (node.textContent = bare));
+  document
+    .querySelectorAll("[data-download-archive]")
+    .forEach((node) => node.setAttribute("href", `./archive/FractalMono-v${bare}.zip`));
   setText("[data-file-count]", `${formatNumber.format(data.files.length)} files`);
 
   const themeToggle = document.querySelector(".theme-toggle");

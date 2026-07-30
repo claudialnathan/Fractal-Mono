@@ -7,6 +7,7 @@ import html
 from pathlib import Path
 
 from fontTools.ttLib import TTFont
+from version import VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -91,7 +92,7 @@ def main() -> None:
     <main>
       <header>
         <h1>Every ligature, audited.</h1>
-        <p class="meta">Fractal Mono v1.305 · {len(rows)} base definitions · 0 automatic programming ligatures · 150 optional dlig drawings · 3 intentionally literal. Each row compares the source, optional shaping, and literal characters.</p>
+        <p class="meta">Fractal Mono v{VERSION} · {len(rows)} base definitions · 0 automatic programming ligatures · 150 optional dlig drawings · 3 intentionally literal. Each row compares the source, optional shaping, and literal characters.</p>
       </header>
       <label for="weight">Weight <input id="weight" type="range" min="100" max="800" value="400" /><output for="weight">400</output></label>
       <label for="ligatures"><input id="ligatures" type="checkbox" /> Preview optional programming ligatures (<code>dlig</code>)</label>

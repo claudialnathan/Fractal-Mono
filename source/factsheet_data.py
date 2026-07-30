@@ -12,6 +12,7 @@ from typing import Any
 
 from fontTools import unicodedata as font_unicode
 from fontTools.ttLib import TTFont
+from version import VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -424,7 +425,7 @@ def generate(font_path: Path) -> dict[str, Any]:
 
     return {
         "family": name_value(font, 1, "Fractal Mono"),
-        "version": name_value(font, 5, "Version 1.305"),
+        "version": name_value(font, 5, f"Version {VERSION}"),
         "postscriptName": name_value(font, 6, "FractalMono-Regular"),
         "designer": name_value(font, 9),
         "license": name_value(font, 13),

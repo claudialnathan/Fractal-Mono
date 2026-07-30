@@ -23,6 +23,7 @@ from fractal_geometry import (
     _stabilize_reference_shape,
     build_reference_glyph,
 )
+from version import PACKAGE_VERSION, VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -33,7 +34,7 @@ BUILD_REPORT = PROJECT / "build-report.json"
 PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.305.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.421"
+
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -138,6 +139,32 @@ def glyph_bounds(font: TTFont, glyph_name: str) -> tuple[int, int, int, int]:
     glyph = font["glyf"][glyph_name]
     glyph.recalcBounds(font["glyf"])
     return glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax
+
+
+def assert_version_consistency() -> None:
+    """Nothing may advertise a version other than the one being built.
+
+    The specimen used to link a download for a release four versions old that had
+    never been packaged, because the version lived in four separate hardcoded
+    copies. They now all derive from source/version.py; this holds the ones that
+    cannot import it.
+    """
+    package = json.loads((PROJECT / "package.json").read_text())
+    assert package["version"] == PACKAGE_VERSION, (
+        "package.json",
+        package["version"],
+        PACKAGE_VERSION,
+    )
+    specimen = (PROJECT / "specimen.html").read_text()
+    assert f"Fractal Mono {VERSION}" in specimen, "specimen title is stale"
+    archive = PROJECT / "archive" / f"FractalMono-v{VERSION}.zip"
+    linked = f"./archive/FractalMono-v{VERSION}.zip"
+    assert linked in specimen, "specimen does not link this release"
+    assert archive.exists(), f"specimen links {archive.name} but it is not packaged"
+
+    report = json.loads((PROJECT / "build-report.json").read_text())
+    assert report["version"] == VERSION, ("build-report.json", report["version"])
+    print(f"PASS: every version reference agrees on {VERSION} and its archive exists")
 
 
 def assert_reference_drawings(variable: TTFont) -> None:
@@ -702,6 +729,7 @@ def main() -> None:
     }
     for tag in ("avar", "STAT", "gasp", "HVAR"):
         assert tag in variable, f"Missing {tag} table"
+    assert_version_consistency()
     assert_reference_drawings(variable)
     reference_dependent_count = assert_reference_dependents(variable)
 

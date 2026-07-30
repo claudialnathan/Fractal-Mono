@@ -9,6 +9,7 @@ from xml.sax.saxutils import escape
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
+from version import VERSION
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -90,7 +91,7 @@ def main() -> None:
     .section {{ font-size: 22px; font-weight: 600; }}
     .caption, .weight {{ font-size: 16px; fill: #66665f; }}
   </style>
-  <text x="36" y="54" class="title">Fractal Mono 1.305 — R/r/K master proof</text>
+  <text x="36" y="54" class="title">Fractal Mono {VERSION} — R/r/K master proof</text>
   <path d="M600 80V1764M1180 80V1764" stroke="#d3d2cc"/>
   {"".join(rows)}
 </svg>
