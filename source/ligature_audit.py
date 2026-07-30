@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a browser catalog of every CLN Mono base ligature definition."""
+"""Generate a browser catalog of every Fractal Mono base ligature definition."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from fontTools.ttLib import TTFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
+FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
 OUTPUT = PROJECT / "ligature-audit.html"
 OPTIONAL_LITERAL = {"/\\", "\\/", "|||"}
 
@@ -54,13 +54,13 @@ def main() -> None:
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CLN Mono complete ligature audit</title>
+    <title>Fractal Mono complete ligature audit</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./cln-mono.css" />
+    <link rel="stylesheet" href="./fractal-mono.css" />
     <style>
       :root {{ --weight: 400; color-scheme: light; background: #f4f3ed; color: #171714; font-synthesis: none; font-variant-ligatures: none; }}
       * {{ box-sizing: border-box; }}
-      body {{ min-width: 320px; margin: 0; font-family: "CLN Mono", monospace; }}
+      body {{ min-width: 320px; margin: 0; font-family: "Fractal Mono", monospace; }}
       main {{ width: min(1320px, calc(100% - 40px)); margin: 0 auto; padding: 32px 0 80px; }}
       header {{ display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding: 24px 0 34px; border-top: 2px solid; }}
       h1, p {{ margin: 0; }}
@@ -91,7 +91,7 @@ def main() -> None:
     <main>
       <header>
         <h1>Every ligature, audited.</h1>
-        <p class="meta">CLN Mono v1.305 · {len(rows)} base definitions · 0 automatic programming ligatures · 150 optional dlig drawings · 3 intentionally literal. Each row compares the source, optional shaping, and literal characters.</p>
+        <p class="meta">Fractal Mono v1.305 · {len(rows)} base definitions · 0 automatic programming ligatures · 150 optional dlig drawings · 3 intentionally literal. Each row compares the source, optional shaping, and literal characters.</p>
       </header>
       <label for="weight">Weight <input id="weight" type="range" min="100" max="800" value="400" /><output for="weight">400</output></label>
       <label for="ligatures"><input id="ligatures" type="checkbox" /> Preview optional programming ligatures (<code>dlig</code>)</label>

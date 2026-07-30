@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate compatible CLN signature masters from canonical drawings.
+"""Generate compatible Fractal signature masters from canonical drawings.
 
 Each drawing is exact at its measured reference weight. The other masters
-transfer the deformation field from the last clean pre-redesign CLN release,
+transfer the deformation field from the last clean pre-redesign Fractal release,
 so weight changes follow an established type design instead of a mechanical
 outline offset.
 """
@@ -28,7 +28,7 @@ from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
 from fontTools.varLib.instancer import instantiateVariableFont
 
-from cln_geometry import (
+from fractal_geometry import (
     ADVANCE,
     REFERENCE_PATHS,
     REFERENCE_SPECS,
@@ -38,8 +38,8 @@ from cln_geometry import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCHIVE = ROOT / "archive" / "CLNMono-v1.252.zip"
-ARCHIVE_FONT = "fonts/desktop/CLNMono-Variable[wght].ttf"
+ARCHIVE = ROOT / "archive" / "FractalMono-v1.252.zip"
+ARCHIVE_FONT = "fonts/desktop/FractalMono-Variable[wght].ttf"
 OUTPUT = Path(__file__).with_name("signature_masters.json")
 
 CUSTOM_NAMES = (

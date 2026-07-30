@@ -1,6 +1,6 @@
-# CLN Mono design notes
+# Fractal Mono design notes
 
-CLN Mono is an upright monospaced family designed by Claudia Nathan. Its visual system is crisp, slightly brutalist, and deliberately uniform across code, interface, editorial, and display settings.
+Fractal Mono is an upright monospaced family designed by Claudia Nathan. Its visual system is crisp, slightly brutalist, and deliberately uniform across code, interface, editorial, and display settings.
 
 ## Metrics
 

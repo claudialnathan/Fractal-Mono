@@ -1,4 +1,4 @@
-CLN MONO
+Fractal MONO
 Gentle brutalism for code and systems.
 
 ABCDEFGHIJKLMNOPQRSTUVWXYZ

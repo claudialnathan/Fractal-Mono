@@ -10435,9 +10435,9 @@
     }
   },
   "source": {
-    "archive": "archive/CLNMono-v1.252.zip",
+    "archive": "archive/FractalMono-v1.252.zip",
     "archiveSha256": "bd55ec86c4dd8a73a91e2c30ec8762fa97e2d74c062344bf0fe6176326a02778",
-    "font": "fonts/desktop/CLNMono-Variable[wght].ttf"
+    "font": "fonts/desktop/FractalMono-Variable[wght].ttf"
   },
   "weights": [
     100.0,

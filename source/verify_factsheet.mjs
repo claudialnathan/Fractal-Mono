@@ -75,7 +75,7 @@ async function openSpecimen(page, label) {
   await page.waitForFunction(
     () =>
       document.body.dataset.specimenReady === "true" &&
-      document.fonts.check('400 16px "CLN Mono"'),
+      document.fonts.check('400 16px "Fractal Mono"'),
   );
 }
 
@@ -173,7 +173,7 @@ assert.match(reducedMotion.transitionDuration, /(?:0\.00001|1e-05)s/);
 await desktop.emulateMedia({ reducedMotion: "no-preference" });
 
 await desktop.screenshot({
-  path: `${output}/CLNMono-factsheet.png`,
+  path: `${output}/FractalMono-factsheet.png`,
   animations: "disabled",
 });
 await desktop.evaluate(() => {
@@ -185,7 +185,7 @@ await desktop.locator(":focus").blur();
 
 await desktop.locator(".theme-toggle").click();
 await desktop.screenshot({
-  path: `${output}/CLNMono-factsheet-dark.png`,
+  path: `${output}/FractalMono-factsheet-dark.png`,
   animations: "disabled",
 });
 await desktop.locator(".theme-toggle").click();
@@ -259,7 +259,7 @@ await desktop.evaluate(() => {
     document.querySelector("#features").offsetTop;
 });
 await desktop.screenshot({
-  path: `${output}/CLNMono-factsheet-features.png`,
+  path: `${output}/FractalMono-factsheet-features.png`,
   animations: "disabled",
 });
 
@@ -296,7 +296,7 @@ assert.ok(mobileChecks.headerHeight >= 44);
 assert.ok(mobileChecks.downloadRight <= 391);
 
 await mobile.screenshot({
-  path: `${output}/CLNMono-factsheet-mobile.png`,
+  path: `${output}/FractalMono-factsheet-mobile.png`,
   animations: "disabled",
 });
 
@@ -307,7 +307,7 @@ const printable = await browser.newPage({
 await openSpecimen(printable, "print");
 await printable.emulateMedia({ media: "print", colorScheme: "light" });
 await printable.pdf({
-  path: `${output}/CLNMono-factsheet.pdf`,
+  path: `${output}/FractalMono-factsheet.pdf`,
   format: "A4",
   printBackground: true,
   margin: {
@@ -319,7 +319,7 @@ await printable.pdf({
   displayHeaderFooter: true,
   headerTemplate: "<span></span>",
   footerTemplate:
-    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>CLN Mono 1.305</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>Fractal Mono 1.305</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
 });
 
 await Promise.all([desktop.close(), mobile.close(), printable.close()]);
@@ -341,11 +341,11 @@ console.log(
       browserErrors,
       externalRequests: [...externalRequests],
       outputs: [
-        "specimens/CLNMono-factsheet.png",
-        "specimens/CLNMono-factsheet-dark.png",
-        "specimens/CLNMono-factsheet-features.png",
-        "specimens/CLNMono-factsheet-mobile.png",
-        "specimens/CLNMono-factsheet.pdf",
+        "specimens/FractalMono-factsheet.png",
+        "specimens/FractalMono-factsheet-dark.png",
+        "specimens/FractalMono-factsheet-features.png",
+        "specimens/FractalMono-factsheet-mobile.png",
+        "specimens/FractalMono-factsheet.pdf",
       ],
     },
     null,

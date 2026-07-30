@@ -25,7 +25,7 @@ WIDTH = 1680
 MARGIN = 96
 ADVANCE = 579
 
-VARIABLE = DESKTOP / "CLNMono-Variable.ttf"
+VARIABLE = DESKTOP / "FractalMono-Variable.ttf"
 
 WEIGHTS = {
     100: "Thin",
@@ -41,7 +41,7 @@ WEIGHTS = {
 
 
 def font(style: str, size: int) -> ImageFont.FreeTypeFont:
-    return ImageFont.truetype(str(DESKTOP / f"CLNMono-{style}.ttf"), size)
+    return ImageFont.truetype(str(DESKTOP / f"FractalMono-{style}.ttf"), size)
 
 
 def variable_font(weight: int, optical_size: int, size: int) -> ImageFont.FreeTypeFont:
@@ -66,7 +66,7 @@ def canvas(height: int) -> tuple[Image.Image, ImageDraw.ImageDraw]:
 def specimen() -> Image.Image:
     image, draw = canvas(1560)
     y = MARGIN
-    draw.text((MARGIN, y), "CLN MONO", font=font("Medium", 132), fill=INK)
+    draw.text((MARGIN, y), "Fractal MONO", font=font("Medium", 132), fill=INK)
     y += 190
     draw.text(
         (MARGIN, y),
@@ -115,7 +115,7 @@ def refinement() -> Image.Image:
     y = MARGIN
     draw.text(
         (MARGIN, y),
-        "CLN Mono 1.305 · Claudia Nathan",
+        "Fractal Mono 1.305 · Claudia Nathan",
         font=font("Medium", 54),
         fill=INK,
     )
@@ -129,7 +129,7 @@ def refinement() -> Image.Image:
     y += 90
 
     sample = "Telltale network 0123456789 rtkwo"
-    draw.text((MARGIN, y), "CLN Mono · designed by Claudia Nathan", font=font("Regular", 26), fill=MUTED)
+    draw.text((MARGIN, y), "Fractal Mono · designed by Claudia Nathan", font=font("Regular", 26), fill=MUTED)
     y += 48
     draw.text((MARGIN, y), sample, font=font("Regular", 56), fill=INK)
     y += 110
@@ -153,7 +153,7 @@ def rk_proof() -> Image.Image:
     for y in range(0, 900, 24):
         draw.line((0, y, WIDTH, y), fill=DARK_GRID, width=1)
 
-    draw.text((MARGIN, 54), "CLN Mono K / r t k w construction proof", font=font("Regular", 32), fill=DARK_MUTED)
+    draw.text((MARGIN, 54), "Fractal Mono K / r t k w construction proof", font=font("Regular", 32), fill=DARK_MUTED)
     for row, style in enumerate(("Thin", "Regular", "ExtraBold")):
         y = 150 + row * 235
         draw.text((MARGIN, y + 68), style, font=font("Regular", 25), fill=DARK_MUTED)
@@ -277,18 +277,18 @@ def final_polish() -> Image.Image:
 def main() -> None:
     SPECIMENS.mkdir(exist_ok=True)
     pages = {
-        "CLNMono-specimen.png": specimen(),
-        "CLNMono-weights.png": weights(),
-        "CLNMono-refinement.png": refinement(),
-        "CLNMono-r-k-proof.png": rk_proof(),
-        "CLNMono-cell-fit.png": cell_fit(),
-        "CLNMono-curve-size-comparison.png": curve_size_comparison(),
-        "CLNMono-final-polish.png": final_polish(),
+        "FractalMono-specimen.png": specimen(),
+        "FractalMono-weights.png": weights(),
+        "FractalMono-refinement.png": refinement(),
+        "FractalMono-r-k-proof.png": rk_proof(),
+        "FractalMono-cell-fit.png": cell_fit(),
+        "FractalMono-curve-size-comparison.png": curve_size_comparison(),
+        "FractalMono-final-polish.png": final_polish(),
     }
     for name, image in pages.items():
         image.save(SPECIMENS / name)
     first, *rest = pages.values()
-    first.save(SPECIMENS / "CLNMono-specimen.pdf", save_all=True, append_images=rest, resolution=150)
+    first.save(SPECIMENS / "FractalMono-specimen.pdf", save_all=True, append_images=rest, resolution=150)
 
 
 if __name__ == "__main__":

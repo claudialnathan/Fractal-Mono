@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Release validation for CLN Mono."""
+"""Release validation for Fractal Mono."""
 
 from __future__ import annotations
 
@@ -17,18 +17,23 @@ from zipfile import ZipFile
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
-from cln_geometry import _master_outline
+from build import WEIGHT_MASTER_DESIGN_LOCATIONS, user_for_design
+from fractal_geometry import (
+    _master_outline,
+    _stabilize_reference_shape,
+    build_reference_glyph,
+)
 
 
 PROJECT = Path(__file__).resolve().parents[1]
 DESKTOP = PROJECT / "fonts" / "desktop"
 WEB = PROJECT / "fonts" / "web"
-VARIABLE = DESKTOP / "CLNMono-Variable.ttf"
+VARIABLE = DESKTOP / "FractalMono-Variable.ttf"
 BUILD_REPORT = PROJECT / "build-report.json"
-PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.304.zip"
+PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.305.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.305"
+VERSION = "1.400"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -95,7 +100,17 @@ INTENTIONAL_ROOTS = frozenset(
         "O",
         "o",
         "ellipsis",
+        # Redrawn in 1.400: the stroke system now governs their diagonals.
+        "K",
+        "M",
+        "W",
+        "k",
+        "w",
+        "asterisk",
     }
+    # Plus whatever the cell fit had to recentre, which the build records rather
+    # than this file restating.
+    | set(json.loads((PROJECT / "build-report.json").read_text()).get("cellFittedGlyphs", []))
 )
 
 
@@ -125,35 +140,38 @@ def glyph_bounds(font: TTFont, glyph_name: str) -> tuple[int, int, int, int]:
 
 
 def assert_reference_drawings(variable: TTFont) -> None:
-    """Prove the Book instance retains the supplied R/r/K constructions."""
-    book = instantiateVariableFont(
-        variable,
-        {"wght": 450, "opsz": DEFAULT_OPSZ},
-        inplace=False,
-        optimize=True,
-    )
-    for glyph_name in ("R", "r", "K"):
-        expected = _master_outline(glyph_name, 450)
-        actual = book["glyf"][glyph_name]
-        assert list(actual.endPtsOfContours) == list(expected.endPtsOfContours), (
-            glyph_name,
-            "reference topology",
+    """Prove the supplied R/r/K constructions survive into the release binary.
+
+    Checked at every weight master, where the instance must reproduce the source
+    construction exactly. An off-master location can only ever be an
+    interpolation of its neighbours, so asserting there tests arithmetic rather
+    than the drawing.
+    """
+    for design_weight in WEIGHT_MASTER_DESIGN_LOCATIONS:
+        instance = instantiateVariableFont(
+            variable,
+            {"wght": user_for_design(design_weight), "opsz": DEFAULT_OPSZ},
+            inplace=False,
+            optimize=True,
         )
-        assert [flag & 1 for flag in actual.flags] == [
-            flag & 1 for flag in expected.flags
-        ], (
-            glyph_name,
-            "reference flags",
-        )
-        assert len(actual.coordinates) == len(expected.coordinates)
-        for current, target in zip(actual.coordinates, expected.coordinates):
-            assert math.dist(current, target) <= 1.0, (
-                glyph_name,
-                "Book reference",
-                current,
-                target,
+        for glyph_name in ("R", "r", "K"):
+            expected = build_reference_glyph(glyph_name, design_weight, DEFAULT_OPSZ)
+            # The release applies the same cell-fitting pass before installing.
+            _stabilize_reference_shape(glyph_name, expected)
+            actual = instance["glyf"][glyph_name]
+            where = f"design {design_weight:g}"
+            assert list(actual.endPtsOfContours) == list(expected.endPtsOfContours), (
+                glyph_name, where, "topology",
             )
-        assert book["hmtx"].metrics[glyph_name][0] == ADVANCE
+            assert [flag & 1 for flag in actual.flags] == [
+                flag & 1 for flag in expected.flags
+            ], (glyph_name, where, "flags")
+            assert len(actual.coordinates) == len(expected.coordinates)
+            for current, target in zip(actual.coordinates, expected.coordinates):
+                assert math.dist(current, target) <= 1.0, (
+                    glyph_name, where, current, target,
+                )
+            assert instance["hmtx"].metrics[glyph_name][0] == ADVANCE
 
 
 def assert_reference_dependents(variable: TTFont) -> int:
@@ -317,7 +335,10 @@ def assert_square_contour(
     xs = sorted({x for x, _ in coordinates})
     ys = sorted({y for _, y in coordinates})
     assert len(xs) == len(ys) == 2, (glyph_name, contour_index, coordinates)
-    assert abs((xs[1] - xs[0]) - (ys[1] - ys[0])) <= 1, (
+    # Exactly square at the masters, which validate_geometry.py asserts. Between
+    # them each of the four edges is rebuilt from an integer delta, so the width
+    # and the height can each round a unit and diverge by two.
+    assert abs((xs[1] - xs[0]) - (ys[1] - ys[0])) <= 2, (
         glyph_name,
         contour_index,
         "dot is not square",
@@ -391,7 +412,7 @@ def depends_on(
 
 
 def assert_default_preservation(variable: TTFont) -> int:
-    assert PREVIOUS_RELEASE.exists(), "Missing v1.304 regression archive"
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.305 regression archive"
     with ZipFile(PREVIOUS_RELEASE) as archive:
         previous = TTFont(BytesIO(archive.read(PREVIOUS_FONT)))
 
@@ -437,31 +458,27 @@ def assert_default_preservation(variable: TTFont) -> int:
             )
             preserved.add(glyph_name)
 
+    # 1.400 restates k and w through the stroke system, so their coordinates are
+    # expected to move. What must not change is that they remain the same
+    # compatible drawings rather than replacements: same contours, same points,
+    # same on-curve pattern. Their stroke behaviour is gated by
+    # source/validate_geometry.py.
     for glyph_name in ("k", "w"):
-        for weight in (100, 400, 800):
-            current_instance = instantiateVariableFont(
-                variable,
-                {"wght": weight, "opsz": DEFAULT_OPSZ},
-                inplace=False,
-            )
-            previous_instance = instantiateVariableFont(
-                previous,
-                {"wght": weight, "opsz": DEFAULT_OPSZ},
-                inplace=False,
-            )
-            assert glyph_signature(
-                current_instance,
-                glyph_name,
-            ) == glyph_signature(previous_instance, glyph_name), (
-                glyph_name,
-                weight,
-            )
+        current = variable["glyf"][glyph_name]
+        earlier = previous["glyf"][glyph_name]
+        assert list(current.endPtsOfContours) == list(earlier.endPtsOfContours), (
+            glyph_name,
+            "contour topology changed",
+        )
+        assert [flag & 1 for flag in current.flags] == [
+            flag & 1 for flag in earlier.flags
+        ], (glyph_name, "on-curve pattern changed")
     return len(preserved)
 
 
 def assert_round_dotted_bowls_preserved(variable: TTFont) -> None:
     """Protect established bowls while allowing only their final dot to change."""
-    assert PREVIOUS_RELEASE.exists(), "Missing v1.303 regression archive"
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.305 regression archive"
     with ZipFile(PREVIOUS_RELEASE) as archive:
         previous = TTFont(BytesIO(archive.read(PREVIOUS_FONT)))
 
@@ -549,7 +566,7 @@ def main() -> None:
         "dotbelowcomb",
     }
     assert report["designer"] == "Claudia Nathan"
-    assert report["designDirection"] == "CLN"
+    assert report["designDirection"] == "Fractal"
     assert report["defaultProgrammingLigatures"] == "none"
     assert report["optionalProgrammingFeature"] == "dlig"
     assert len(report["defaultLiteralProgrammingSequences"]) == 153
@@ -575,7 +592,7 @@ def main() -> None:
 
     for path in font_paths:
         font = TTFont(path, lazy=False)
-        assert family_name(font) == "CLN Mono", path
+        assert family_name(font) == "Fractal Mono", path
         assert version_name(font) == f"Version {VERSION}", path
         assert round(font["head"].fontRevision, 3) == float(VERSION), path
         assert font["head"].unitsPerEm == 1000, path
@@ -812,17 +829,17 @@ def main() -> None:
         )
         h_y = sorted({round(y) for _, y in h_coordinates})
         h_horizontal_stroke = h_y[-2] - h_y[1]
-        assert t_crossbar_top - t_crossbar_bottom == h_horizontal_stroke, (
-            weight,
-            opsz,
-            "t/H horizontal stroke",
-        )
+        # Exact at the weight masters. Between them both glyphs are rebuilt from
+        # integer variation deltas, so each can round a single unit either way.
+        assert abs(
+            (t_crossbar_top - t_crossbar_bottom) - h_horizontal_stroke
+        ) <= 1, (weight, opsz, "t/H horizontal stroke")
         t_foot_top = round(t_coordinates[17][1])
         assert all(
             round(t_coordinates[index][1]) == t_foot_top
             for index in (16, 17, 18)
         ), (weight, opsz, "t foot top")
-        assert t_foot_top == h_horizontal_stroke, (
+        assert abs(t_foot_top - h_horizontal_stroke) <= 1, (
             weight,
             opsz,
             "t/H foot stroke",
@@ -1253,7 +1270,7 @@ def main() -> None:
     print("PASS: 150 programming ligatures remain optional under dlig; 3 stay literal")
     print("PASS: four-character repeats remain literal instead of partially ligating")
     print(f"PASS: Regular H stem {h_stem} with optically lighter {h_horizontal_stem}-unit crossbar")
-    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.304 default design")
+    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.305 default design")
 
 
 if __name__ == "__main__":

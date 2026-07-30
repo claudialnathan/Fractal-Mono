@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a large proof for CLN Mono's R, r, and K drawings."""
+"""Generate a large proof for Fractal Mono's R, r, and K drawings."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from fontTools.varLib.instancer import instantiateVariableFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
-OUTPUT = PROJECT / "specimens" / "CLNMono-RrK-proof.svg"
+FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
+OUTPUT = PROJECT / "specimens" / "FractalMono-RrK-proof.svg"
 GLYPHS = "RrK"
 WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
 OPTICAL_SIZES = ((9, "Text"), (14, "Auto"), (72, "Display"))
@@ -90,7 +90,7 @@ def main() -> None:
     .section {{ font-size: 22px; font-weight: 600; }}
     .caption, .weight {{ font-size: 16px; fill: #66665f; }}
   </style>
-  <text x="36" y="54" class="title">CLN Mono 1.305 — R/r/K master proof</text>
+  <text x="36" y="54" class="title">Fractal Mono 1.305 — R/r/K master proof</text>
   <path d="M600 80V1764M1180 80V1764" stroke="#d3d2cc"/>
   {"".join(rows)}
 </svg>

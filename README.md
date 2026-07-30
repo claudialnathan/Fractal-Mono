@@ -1,8 +1,8 @@
-# CLN Mono
+# Fractal Mono
 
-CLN Mono is a crisp monospaced typeface for code, interfaces, technical writing, and graphic work. It has a slightly brutalist construction, open counters, square punctuation, and an invariant `579`-unit cell that keeps text sitting cleanly on the line.
+Fractal Mono is a crisp monospaced typeface for code, interfaces, technical writing, and graphic work. It has a slightly brutalist construction, open counters, square punctuation, and an invariant `579`-unit cell that keeps text sitting cleanly on the line.
 
-![CLN Mono specimen](specimens/CLNMono-specimen.png)
+![Fractal Mono specimen](specimens/FractalMono-specimen.png)
 
 ## Family
 
@@ -26,32 +26,32 @@ The signature set includes the hooked `J/j`, bridged `K`, compact `R/r`, open `M
 
 ## Files
 
-- `fonts/desktop/CLNMono-Variable.ttf` — variable desktop font
-- `fonts/desktop/CLNMono-*.ttf` — nine static desktop weights at optical size 14
-- `fonts/web/CLNMono-Variable.woff2` and `.woff` — variable web fonts
-- `fonts/web/CLNMono-*.woff2` and `.woff` — static web fonts
-- `cln-mono.css` — web setup with automatic optical sizing
+- `fonts/desktop/FractalMono-Variable.ttf` — variable desktop font
+- `fonts/desktop/FractalMono-*.ttf` — nine static desktop weights at optical size 14
+- `fonts/web/FractalMono-Variable.woff2` and `.woff` — variable web fonts
+- `fonts/web/FractalMono-*.woff2` and `.woff` — static web fonts
+- `fractal-mono.css` — web setup with automatic optical sizing
 - `specimen.html` — interactive tester, glyph set, OpenType features, and release data
 - `ligature-audit.html` — every programming sequence, shaped and literal
 - `build-report.json` — release metrics, file sizes, and SHA-256 hashes
 
 ## Install
 
-On macOS, install `fonts/desktop/CLNMono-Variable.ttf` in Font Book. Install either the variable font or the static family, not both.
+On macOS, install `fonts/desktop/FractalMono-Variable.ttf` in Font Book. Install either the variable font or the static family, not both.
 
 For the web:
 
 ```css
 @font-face {
-  font-family: "CLN Mono";
-  src: url("./fonts/web/CLNMono-Variable.woff2") format("woff2") tech("variations");
+  font-family: "Fractal Mono";
+  src: url("./fonts/web/FractalMono-Variable.woff2") format("woff2") tech("variations");
   font-style: normal;
   font-weight: 100 800;
   font-display: swap;
 }
 
 code {
-  font-family: "CLN Mono", monospace;
+  font-family: "Fractal Mono", monospace;
   font-optical-sizing: auto;
   font-variant-ligatures: none;
 }
@@ -92,10 +92,10 @@ The build is self-contained. Its OFL upstream binary and compatible signature-ma
 
 ## Scope
 
-CLN Mono 1.305 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+Fractal Mono 1.305 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
 
 ## Licence
 
 Copyright 2026 Claudia Nathan.
 
-CLN Mono is available under the [SIL Open Font License 1.1](OFL.txt). Required notices for inherited OFL components are retained in the licence and font metadata.
+Fractal Mono is available under the [SIL Open Font License 1.1](OFL.txt). Required notices for inherited OFL components are retained in the licence and font metadata.

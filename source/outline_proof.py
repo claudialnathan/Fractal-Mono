@@ -12,8 +12,8 @@ from fontTools.varLib.instancer import instantiateVariableFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
-OUTPUT = PROJECT / "specimens" / "CLNMono-outline-proof.svg"
+FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
+OUTPUT = PROJECT / "specimens" / "FractalMono-outline-proof.svg"
 GLYPHS = "JjKRrMWStfilOo0!?^;:*"
 WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
 OPTICAL_SIZES = (
@@ -97,7 +97,7 @@ def main() -> None:
     .caption {{ font-size: 17px; fill: #66665f; }}
     .row-label {{ font-size: 16px; fill: #66665f; }}
   </style>
-  <text x="36" y="54" class="title">CLN Mono 1.305 — complete design-space outline proof</text>
+  <text x="36" y="54" class="title">Fractal Mono 1.305 — complete design-space outline proof</text>
   <path d="M900 92V3270" stroke="#d3d2cc"/>
   <path d="M36 1135H1764M36 2195H1764" stroke="#d3d2cc"/>
   {"".join(rows)}

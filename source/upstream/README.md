@@ -1,6 +1,6 @@
 # Upstream source
 
-`JetBrainsMono[wght].ttf` is the OFL-licensed JetBrains Mono 2.304 variable source used for CLN Mono’s character coverage and OpenType foundation.
+`JetBrainsMono[wght].ttf` is the OFL-licensed JetBrains Mono 2.304 variable source used for Fractal Mono’s character coverage and OpenType foundation.
 
 SHA-256:
 

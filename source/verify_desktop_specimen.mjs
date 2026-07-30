@@ -4,14 +4,14 @@ import { chromium } from "playwright";
 
 const project = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = `${project}/specimens`;
-const artifact = `${output}/CLN-Mono-Type-Specimen.html`;
-const preview = `${output}/CLN-Mono-Type-Specimen-Preview.png`;
-const mobilePreview = `${output}/CLN-Mono-Type-Specimen-Mobile.png`;
-const codePreview = `${output}/CLN-Mono-Type-Specimen-Code.png`;
-const repertoirePreview = `${output}/CLN-Mono-Type-Specimen-Repertoire.png`;
-const rPreview = `${output}/CLN-Mono-Type-Specimen-Lowercase-R.png`;
-const rasterPreview = `${output}/CLN-Mono-Rasterisation-1x.png`;
-const rasterRetinaPreview = `${output}/CLN-Mono-Rasterisation-2x.png`;
+const artifact = `${output}/Fractal-Mono-Type-Specimen.html`;
+const preview = `${output}/Fractal-Mono-Type-Specimen-Preview.png`;
+const mobilePreview = `${output}/Fractal-Mono-Type-Specimen-Mobile.png`;
+const codePreview = `${output}/Fractal-Mono-Type-Specimen-Code.png`;
+const repertoirePreview = `${output}/Fractal-Mono-Type-Specimen-Repertoire.png`;
+const rPreview = `${output}/Fractal-Mono-Type-Specimen-Lowercase-R.png`;
+const rasterPreview = `${output}/Fractal-Mono-Rasterisation-1x.png`;
+const rasterRetinaPreview = `${output}/Fractal-Mono-Rasterisation-2x.png`;
 
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1200 } });
@@ -31,7 +31,7 @@ await page.goto(pathToFileURL(artifact).href, { waitUntil: "load" });
 await page.evaluate(() => document.fonts.ready);
 
 const fontLoaded = await page.evaluate(() =>
-  document.fonts.check('400 16px "CLN Mono Specimen"')
+  document.fonts.check('400 16px "Fractal Mono Specimen"')
 );
 const fontFamily = await page.locator("#plain-tester").evaluate(
   (element) => getComputedStyle(element).fontFamily
@@ -40,7 +40,7 @@ const displayedVersion = await page.locator(".meta-value").first().textContent()
 const glyphCards = await page.locator(".glyph-card").count();
 const initialVisibleCount = await page.locator("#character-count").textContent();
 const accessibleStructure = {
-  h1: await page.getByRole("heading", { level: 1, name: "CLN MONO" }).count(),
+  h1: await page.getByRole("heading", { level: 1, name: "Fractal MONO" }).count(),
   h2: await page.getByRole("heading", { level: 2 }).count(),
   slider: await page.getByRole("slider", { name: /Weight axis/i }).count(),
   programmingLigatures: await page.getByRole("checkbox", { name: /Optional programming ligatures/i }).count(),

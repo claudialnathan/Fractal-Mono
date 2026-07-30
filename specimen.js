@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const data = window.CLN_MONO_DATA;
+  const data = window.FRACTAL_MONO_DATA;
 
   if (!data) {
     document.body.dataset.specimenError = "missing-data";
@@ -41,7 +41,7 @@
   setText("[data-file-count]", `${formatNumber.format(data.files.length)} files`);
 
   const themeToggle = document.querySelector(".theme-toggle");
-  const themeStorageKey = "cln-mono-specimen-theme";
+  const themeStorageKey = "fractal-mono-specimen-theme";
 
   const preferredTheme = () => {
     try {

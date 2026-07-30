@@ -1,6 +1,6 @@
 # Contributing
 
-CLN Mono changes must preserve the fixed `579`-unit cell and remain compatible across both variable axes.
+Fractal Mono changes must preserve the fixed `579`-unit cell and remain compatible across both variable axes.
 
 1. Create a focused branch.
 2. Run `make setup` once.

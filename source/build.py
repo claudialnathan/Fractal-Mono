@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the CLN Mono release family from its configured OFL source master."""
+"""Build the Fractal Mono release family from its configured OFL source master."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import math
 import shutil
 import sys
 from copy import deepcopy
-from functools import partial
+from functools import lru_cache, partial
 from pathlib import Path
 
 from fontTools.designspaceLib import AxisDescriptor, DesignSpaceDocument, SourceDescriptor
@@ -22,7 +22,7 @@ from fontTools.ttLib.tables.TupleVariation import TupleVariation
 from fontTools.varLib import build as build_variable
 from fontTools.varLib.instancer import AxisTriple, instantiateVariableFont
 
-from cln_geometry import (
+from fractal_geometry import (
     CUSTOM_GLYPH_NAMES,
     DEFAULT_OPSZ,
     DISPLAY_OPSZ,
@@ -34,12 +34,15 @@ from cln_geometry import (
     install_reference_glyphs,
     install_square_ellipsis,
     install_square_marks,
+    fit_glyphs_to_cell,
     offset_glyph_stable,
 )
+import stroke_system
 
 
-FAMILY = "CLN Mono"
-VERSION = "1.305"
+FAMILY = "Fractal Mono"
+VENDOR_ID = "FRCT"
+VERSION = "1.400"
 UPM = 1000
 ADVANCE = 579
 
@@ -62,7 +65,7 @@ LOWERCASE_ASCENDER_CHARS = frozenset("bdfhl")
 # baseline-crossing curves.
 DESCENDER_SCALE = 195 / 180
 
-# Source-master coordinate used to produce CLN Mono's ~80-unit Regular stems.
+# Source-master coordinate used to produce Fractal Mono's ~80-unit Regular stems.
 SOURCE_REGULAR_WEIGHT = 310
 TYPO_ASCENDER = 950
 TYPO_DESCENDER = -250
@@ -71,6 +74,12 @@ WIN_DESCENDER = 300
 
 # Custom-glyph stem widths at the wght axis extremes and default.
 STEMS_LOWER = (50, 80, 150)
+STEM_ANCHORS = STEMS_LOWER
+WEIGHT_MASTER_DESIGN_LOCATIONS = (100.0, 400.0, 461.0, 620.0, 800.0)
+WEIGHT_AXIS_SAMPLES = (100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800)
+# Filled during the build with the glyphs the cell fit had to recentre, so the
+# regression gate knows which outlines were expected to move.
+CELL_FITTED: set[str] = set()
 
 # v1.240's contour-local tension experiment moved quadratic controls without
 # moving their implied on-curve joins. At display sizes this produced small
@@ -83,13 +92,13 @@ STEMS_LOWER = (50, 80, 150)
 # a proportionally smaller version for o. The defaults stay dotted.
 LOWERCASE_O_DOT_SCALE = 0.82
 
-# CLN Mono's lowercase-r construction. Its compatible quadratic point
+# Fractal Mono's lowercase-r construction. Its compatible quadratic point
 # order supports three variable masters while the contour expands along local
 # normals to follow the family's 50/80/150 stem system.
-CLN_R_REFERENCE_ADVANCE = 996
-CLN_R_REFERENCE_TOP = 1007
-CLN_R_REFERENCE_STEM = 138
-CLN_R_POINTS = (
+FRACTAL_R_REFERENCE_ADVANCE = 996
+FRACTAL_R_REFERENCE_TOP = 1007
+FRACTAL_R_REFERENCE_STEM = 138
+FRACTAL_R_POINTS = (
     (182, 998),
     (292, 998),
     (312, 909),
@@ -120,14 +129,14 @@ CLN_R_POINTS = (
     (182, 0),
 )
 
-# Compact construction diagrams for CLN Mono's lowercase t, k, and w. The
+# Compact construction diagrams for Fractal Mono's lowercase t, k, and w. The
 # coordinates describe the Regular silhouettes, then expand along
 # contour normals to the family's 50/80/150 stem system.
-CLN_DRAWING_ADVANCE = 600
-CLN_DRAWING_X_HEIGHT = 500
-CLN_DRAWING_CAP_HEIGHT = 700
-CLN_DRAWING_STEM = 95
-CLN_T_CONTOURS = (
+FRACTAL_DRAWING_ADVANCE = 600
+FRACTAL_DRAWING_X_HEIGHT = 500
+FRACTAL_DRAWING_CAP_HEIGHT = 700
+FRACTAL_DRAWING_STEM = 95
+FRACTAL_T_CONTOURS = (
     (
         (335, 0, True),
         (280, 0, False),
@@ -151,12 +160,12 @@ CLN_T_CONTOURS = (
         (524, 0, True),
     ),
 )
-CLN_K_CONTOURS = (
+FRACTAL_K_CONTOURS = (
     ((102, 0, True), (102, 700, True), (197, 700, True), (197, 0, True)),
     ((163, 130, True), (135, 220, True), (415, 500, True), (537, 500, True)),
     ((432, 0, True), (249, 264, True), (314, 333, True), (547, 0, True)),
 )
-CLN_W_CONTOURS = (
+FRACTAL_W_CONTOURS = (
     (
         (122, 0, True),
         (43, 500, True),
@@ -177,7 +186,7 @@ CLN_W_CONTOURS = (
     ),
 )
 
-# Default glyphs replaced by the CLN Mono character variants.
+# Default glyphs replaced by the Fractal Mono character variants.
 ALTERNATE_SWAPS = {"l": "l.cv01", "lslash": "lslash.cv01"}
 
 # Every programming sequence remains source-legible by default. Joined drawings
@@ -631,9 +640,9 @@ def x_transform(
     # Contextual ligature drawings extend left across one or more placeholder
     # cells while retaining a single-cell advance. Scaling those
     # drawings about x=0 keeps every implied 600-unit source-cell boundary on
-    # CLN Mono's 579-unit grid. The previous centre-only translation preserved
+    # Fractal Mono's 579-unit grid. The previous centre-only translation preserved
     # the old grid inside a tighter font, so long operators progressively
-    # overran their cells and no longer matched CLN's base punctuation.
+    # overran their cells and no longer matched Fractal's base punctuation.
     if ".liga" in glyph_name and source_advance:
         return output_advance / source_advance, 0.0
 
@@ -813,7 +822,7 @@ def draw_code_slash(pen: TTGlyphPen, origin_x: float, thickness: float) -> None:
 
 
 def build_markup_ligature(stem: float, symbols: str):
-    """Build restrained, source-legible markup on one CLN geometry system.
+    """Build restrained, source-legible markup on one Fractal geometry system.
 
     Every part uses the same 70–560 vertical band and stroke ratio. Each source
     character remains centred in its own cell, and <> stays literal rather than
@@ -1000,28 +1009,28 @@ CUSTOM_PROGRAMMING_LIGATURES = {
 }
 
 
-def cln_drawing_y(y: float) -> float:
-    if y <= CLN_DRAWING_X_HEIGHT:
-        return y * X_HEIGHT / CLN_DRAWING_X_HEIGHT
-    return X_HEIGHT + (y - CLN_DRAWING_X_HEIGHT) * (
+def fractal_drawing_y(y: float) -> float:
+    if y <= FRACTAL_DRAWING_X_HEIGHT:
+        return y * X_HEIGHT / FRACTAL_DRAWING_X_HEIGHT
+    return X_HEIGHT + (y - FRACTAL_DRAWING_X_HEIGHT) * (
         (CAP_HEIGHT - X_HEIGHT)
-        / (CLN_DRAWING_CAP_HEIGHT - CLN_DRAWING_X_HEIGHT)
+        / (FRACTAL_DRAWING_CAP_HEIGHT - FRACTAL_DRAWING_X_HEIGHT)
     )
 
 
-def build_cln_letterform(
+def build_fractal_letterform(
     stem: float,
     contours: tuple[tuple[tuple[int, int, bool], ...], ...],
 ):
-    """Build a CLN letterform in family metrics and weight."""
-    x_scale = ADVANCE / CLN_DRAWING_ADVANCE
-    reference_stem = CLN_DRAWING_STEM * x_scale
+    """Build a Fractal letterform in family metrics and weight."""
+    x_scale = ADVANCE / FRACTAL_DRAWING_ADVANCE
+    reference_stem = FRACTAL_DRAWING_STEM * x_scale
     offset = (stem - reference_stem) / 2
     pen = TTGlyphPen(None)
 
     for contour in contours:
         reference = [
-            (x * x_scale, cln_drawing_y(y), on_curve, y)
+            (x * x_scale, fractal_drawing_y(y), on_curve, y)
             for x, y, on_curve in contour
         ]
         area = sum(
@@ -1043,8 +1052,8 @@ def build_cln_letterform(
             expanded_y = y + normal_y * offset
             if source_y in {
                 0,
-                CLN_DRAWING_X_HEIGHT,
-                CLN_DRAWING_CAP_HEIGHT,
+                FRACTAL_DRAWING_X_HEIGHT,
+                FRACTAL_DRAWING_CAP_HEIGHT,
                 662,
             }:
                 expanded_y = y
@@ -1073,24 +1082,42 @@ def build_cln_letterform(
 
 
 def build_lowercase_t(stem: float):
-    return build_cln_letterform(stem, CLN_T_CONTOURS)
+    return build_fractal_letterform(stem, FRACTAL_T_CONTOURS)
+
+
+@lru_cache(maxsize=None)
+def _letterform_reference(name: str, contours):
+    return build_fractal_letterform(STEMS_LOWER[1], contours)
+
+
+def _stroked_letterform(name: str, stem: float, contours):
+    glyph = build_fractal_letterform(stem, contours)
+    reference = _letterform_reference(name, contours)
+    stroke_system.apply(
+        glyph,
+        name,
+        stem=stem,
+        reference=reference,
+        reference_stem=stroke_system.reference_stem(reference, name),
+    )
+    return glyph
 
 
 def build_lowercase_k(stem: float):
-    return build_cln_letterform(stem, CLN_K_CONTOURS)
+    return _stroked_letterform("k", stem, FRACTAL_K_CONTOURS)
 
 
 def build_lowercase_w(stem: float):
-    return build_cln_letterform(stem, CLN_W_CONTOURS)
+    return _stroked_letterform("w", stem, FRACTAL_W_CONTOURS)
 
 
 def build_lowercase_r(stem: float):
-    """Build CLN Mono's lowercase r with compatible curve-handle movement."""
-    scale = X_HEIGHT / CLN_R_REFERENCE_TOP
-    cell_shift = (ADVANCE - CLN_R_REFERENCE_ADVANCE * scale) / 2
+    """Build Fractal Mono's lowercase r with compatible curve-handle movement."""
+    scale = X_HEIGHT / FRACTAL_R_REFERENCE_TOP
+    cell_shift = (ADVANCE - FRACTAL_R_REFERENCE_ADVANCE * scale) / 2
     points = [
         (round(x * scale + cell_shift), round(y * scale))
-        for x, y in CLN_R_POINTS
+        for x, y in FRACTAL_R_POINTS
     ]
 
     pen = TTGlyphPen(None)
@@ -1117,7 +1144,7 @@ def build_lowercase_r(stem: float):
     pen.lineTo(points[27])
     pen.closePath()
     glyph = pen.glyph()
-    reference_stem = CLN_R_REFERENCE_STEM * scale
+    reference_stem = FRACTAL_R_REFERENCE_STEM * scale
     glyph = offset_glyph_stable(
         glyph,
         (stem - reference_stem) / 2,
@@ -1174,7 +1201,7 @@ def swap_in_alternates(font: TTFont) -> None:
 
 
 def square_dot_mark(font: TTFont, glyph_name: str = "uni0307") -> None:
-    """Replace the round dot-above mark with CLN Mono's crisp square.
+    """Replace the round dot-above mark with Fractal Mono's crisp square.
     i and j (and every dotted letter) reference this one mark glyph, so they
     all pick it up. Point count, order, and gvar deltas are preserved; the
     existing weight deltas keep growing the square across the axis."""
@@ -1346,16 +1373,16 @@ def set_family_names(font: TTFont, style: str, weight: int) -> None:
     )
     set_name(font, 1, legacy_family)
     set_name(font, 2, legacy_style)
-    set_name(font, 3, f"{VERSION};CLN;CLNMono-{ps_style}")
+    set_name(font, 3, f"{VERSION};{VENDOR_ID.strip()};FractalMono-{ps_style}")
     set_name(font, 4, f"{FAMILY} {style}")
     set_name(font, 5, f"Version {VERSION}")
-    set_name(font, 6, f"CLNMono-{ps_style}")
-    set_name(font, 8, "CLN")
+    set_name(font, 6, f"FractalMono-{ps_style}")
+    set_name(font, 8, "Fractal")
     set_name(font, 9, "Claudia Nathan")
     set_name(
         font,
         10,
-        "CLN Mono is a monospaced typeface designed by Claudia Nathan.",
+        "Fractal Mono is a monospaced typeface designed by Claudia Nathan.",
     )
     remove_name(font, 11)
     remove_name(font, 12)
@@ -1363,12 +1390,12 @@ def set_family_names(font: TTFont, style: str, weight: int) -> None:
     set_name(font, 14, "https://openfontlicense.org")
     set_name(font, 16, FAMILY)
     set_name(font, 17, style)
-    set_name(font, 25, "CLNMono")
+    set_name(font, 25, "FractalMono")
 
     os2 = font["OS/2"]
     os2.usWeightClass = weight
     os2.usWidthClass = 5
-    os2.achVendID = "CLN "
+    os2.achVendID = VENDOR_ID
     os2.xAvgCharWidth = ADVANCE
     os2.sTypoAscender = TYPO_ASCENDER
     os2.sTypoDescender = TYPO_DESCENDER
@@ -1411,7 +1438,7 @@ def install_variable_instances(font: TTFont) -> None:
         instance.subfamilyNameID = add_name(font, style)
         instance.postscriptNameID = add_name(
             font,
-            f"CLNMono-{style_postscript(style)}",
+            f"FractalMono-{style_postscript(style)}",
         )
         instance.coordinates = {
             "wght": float(weight),
@@ -1466,6 +1493,10 @@ def transform_weight_variable() -> TTFont:
         optimize=True,
     )
     font["fvar"].axes[0].defaultValue = 400
+    # The upstream mapping was tuned for the source's own stem widths. Fractal's
+    # stem system is different, so the source axis is left unmapped here and the
+    # release mapping is recomputed from Fractal's own anchors in weight_axis_map.
+    font["avar"].segments["wght"] = {-1.0: -1.0, 0.0: 0.0, 1.0: 1.0}
     swap_in_alternates(font)
     move_programming_ligatures_to_dlig(font)
     glyphs = font["glyf"]
@@ -1571,7 +1602,7 @@ def transform_weight_variable() -> TTFont:
         if tag in font:
             del font[tag]
 
-    # The source table enabled grid fitting at every PPEM even though CLN's
+    # The source table enabled grid fitting at every PPEM even though Fractal's
     # transformed outlines deliberately carry no hint programs.
     # Ask rasterizers for grayscale and symmetric smoothing without grid fit.
     font["gasp"].version = 1
@@ -1582,59 +1613,75 @@ def transform_weight_variable() -> TTFont:
     return font
 
 
-def denormalize_weight(value: float) -> float:
-    if value < 0:
-        return 400 + value * 300
-    return 400 + value * 400
+def design_stem(design_weight: float) -> float:
+    """Stem width the source masters blend to at a design-space location.
 
-
-def inverse_avar_value(segments: dict[float, float], target: float) -> float:
-    points = sorted(segments.items())
-    for (input_a, output_a), (input_b, output_b) in zip(points, points[1:]):
-        if output_a <= target <= output_b:
-            if output_a == output_b:
-                return input_a
-            fraction = (target - output_a) / (output_b - output_a)
-            return input_a + (input_b - input_a) * fraction
-    raise ValueError(f"Unable to invert avar value {target}")
-
-
-def weight_master_locations(
-    weight_variable: TTFont,
-) -> list[tuple[float, float]]:
-    """Return (user weight, design weight) source locations.
-
-    The fourth source preserves the established intermediate source knot near
-    Book/Medium, where CLN Mono's 300–500 rhythm is most sensitive.
+    The design axis is a linear blend between the three stem anchors, so stem
+    width is piecewise linear in design weight.
     """
-    avar_segments = weight_variable["avar"].segments["wght"]
-    peaks = {-1.0, 0.0, 1.0}
-    for variations in weight_variable["gvar"].variations.values():
-        for variation in variations:
-            if "wght" in variation.axes:
-                peaks.add(float(variation.axes["wght"][1]))
-
-    locations: list[tuple[float, float]] = []
-    for design_normalized in sorted(peaks):
-        user_normalized = inverse_avar_value(avar_segments, design_normalized)
-        locations.append(
-            (
-                denormalize_weight(user_normalized),
-                denormalize_weight(design_normalized),
-            )
+    if design_weight <= 400:
+        return STEM_ANCHORS[0] + (design_weight - 100) * (
+            (STEM_ANCHORS[1] - STEM_ANCHORS[0]) / 300
         )
-    return locations
+    return STEM_ANCHORS[1] + (design_weight - 400) * (
+        (STEM_ANCHORS[2] - STEM_ANCHORS[1]) / 400
+    )
 
 
-def weight_axis_map(weight_variable: TTFont) -> list[tuple[float, float]]:
+def design_for_stem(stem: float) -> float:
+    if stem <= STEM_ANCHORS[1]:
+        return 100 + (stem - STEM_ANCHORS[0]) * (
+            300 / (STEM_ANCHORS[1] - STEM_ANCHORS[0])
+        )
+    return 400 + (stem - STEM_ANCHORS[1]) * (
+        400 / (STEM_ANCHORS[2] - STEM_ANCHORS[1])
+    )
+
+
+def target_stem(user_weight: float) -> float:
+    """Stem width a named weight should render.
+
+    A constant proportional step keeps every named weight an equal perceptual
+    distance from its neighbours. The three anchors already sit on one geometric
+    progression, so both halves share a ratio of about 1.17 per 100 units.
+    """
+    if user_weight <= 400:
+        return STEM_ANCHORS[0] * (STEM_ANCHORS[1] / STEM_ANCHORS[0]) ** (
+            (user_weight - 100) / 300
+        )
+    return STEM_ANCHORS[1] * (STEM_ANCHORS[2] / STEM_ANCHORS[1]) ** (
+        (user_weight - 400) / 400
+    )
+
+
+def user_for_design(design_weight: float) -> float:
+    """Invert the release mapping: which wght value renders this design weight."""
+    stem = design_stem(design_weight)
+    if stem <= STEM_ANCHORS[1]:
+        return 100 + 300 * (
+            math.log(stem / STEM_ANCHORS[0])
+            / math.log(STEM_ANCHORS[1] / STEM_ANCHORS[0])
+        )
+    return 400 + 400 * (
+        math.log(stem / STEM_ANCHORS[1])
+        / math.log(STEM_ANCHORS[2] / STEM_ANCHORS[1])
+    )
+
+
+def weight_master_locations() -> list[tuple[float, float]]:
+    """Return (source location, design weight) pairs for the weight masters.
+
+    With the source axis unmapped these are the same number. The 461 knot
+    protects the sensitive 300-500 rhythm and 620 covers the bold half, which
+    would otherwise interpolate across one span from Book to ExtraBold.
+    """
+    return [(value, value) for value in WEIGHT_MASTER_DESIGN_LOCATIONS]
+
+
+def weight_axis_map() -> list[tuple[float, float]]:
     return [
-        (
-            denormalize_weight(user_normalized),
-            denormalize_weight(design_normalized),
-        )
-        for user_normalized, design_normalized in sorted(
-            weight_variable["avar"].segments["wght"].items()
-        )
+        (sample, round(design_for_stem(target_stem(sample)), 4))
+        for sample in WEIGHT_AXIS_SAMPLES
     ]
 
 
@@ -1665,6 +1712,7 @@ def make_optical_master(
     install_reference_glyphs(font, user_weight, opsz)
     install_square_marks(font, user_weight, opsz)
     install_square_ellipsis(font, user_weight, opsz)
+    CELL_FITTED.update(fit_glyphs_to_cell(font))
     font.recalcBBoxes = True
     return font
 
@@ -1680,7 +1728,7 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
     weight_axis.minimum = 100
     weight_axis.default = 400
     weight_axis.maximum = 800
-    weight_axis.map = weight_axis_map(weight_variable)
+    weight_axis.map = weight_axis_map()
     designspace.addAxis(weight_axis)
 
     optical_axis = AxisDescriptor()
@@ -1691,7 +1739,7 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
     optical_axis.maximum = DISPLAY_OPSZ
     designspace.addAxis(optical_axis)
 
-    for user_weight, design_weight in weight_master_locations(weight_variable):
+    for user_weight, design_weight in weight_master_locations():
         for opsz in (TEXT_OPSZ, DEFAULT_OPSZ, DISPLAY_OPSZ):
             master = make_optical_master(
                 weight_variable,
@@ -1699,7 +1747,8 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
                 opsz,
             )
             weight_label = f"{user_weight:.3f}".rstrip("0").rstrip(".")
-            master_path = masters_dir / f"CLNMono-wght{weight_label}-opsz{opsz}.ttf"
+            master_path = masters_dir / f"FractalMono-wght{weight_label}-opsz{opsz}.ttf"
+            pin_timestamp(master)
             master.save(master_path)
 
             source = SourceDescriptor()
@@ -1716,7 +1765,7 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
                 source.copyFeatures = True
             designspace.addSource(source)
 
-    designspace_path = BUILD / "CLNMono.designspace"
+    designspace_path = BUILD / "FractalMono.designspace"
     designspace.write(designspace_path)
     variable, _, _ = build_variable(designspace_path)
     set_family_names(variable, "Regular", 400)
@@ -1729,6 +1778,7 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
 def save_web_flavors(source_path: Path, stem: str) -> None:
     for flavor in ("woff2", "woff"):
         font = TTFont(source_path, recalcTimestamp=False)
+        pin_timestamp(font)
         font.flavor = flavor
         font.save(WEB_DIR / f"{stem}.{flavor}")
 
@@ -1745,10 +1795,22 @@ def instantiate_static(variable_path: Path, weight: int, style: str) -> Path:
         optimize=True,
     )
     set_family_names(static, style, weight)
-    destination = DESKTOP_DIR / f"CLNMono-{style_postscript(style)}.ttf"
+    destination = DESKTOP_DIR / f"FractalMono-{style_postscript(style)}.ttf"
+    pin_timestamp(static)
     static.save(destination)
-    save_web_flavors(destination, f"CLNMono-{style_postscript(style)}")
+    save_web_flavors(destination, f"FractalMono-{style_postscript(style)}")
     return destination
+
+
+# A release hash has to identify the outlines, not the moment of the build.
+# head.modified is the only field that moved between identical builds.
+BUILD_TIMESTAMP = 3910000000
+
+
+def pin_timestamp(font: TTFont) -> None:
+    font.recalcTimestamp = False
+    font["head"].modified = BUILD_TIMESTAMP
+    font["head"].created = BUILD_TIMESTAMP
 
 
 def sha256(path: Path) -> str:
@@ -1777,12 +1839,13 @@ def main() -> None:
         for sequence in programming_sequences
         if sequence not in ALWAYS_LITERAL_LIGATURE_SEQUENCES
     ]
-    variable_path = DESKTOP_DIR / "CLNMono-Variable.ttf"
+    variable_path = DESKTOP_DIR / "FractalMono-Variable.ttf"
+    pin_timestamp(variable)
     variable.save(variable_path)
     if quick:
         return
 
-    save_web_flavors(variable_path, "CLNMono-Variable")
+    save_web_flavors(variable_path, "FractalMono-Variable")
 
     static_paths = [
         instantiate_static(variable_path, weight, style)
@@ -1876,7 +1939,7 @@ def main() -> None:
             "contourPoints": 4,
         },
         "designer": "Claudia Nathan",
-        "designDirection": "CLN",
+        "designDirection": "Fractal",
         "ligatureGridScale": ADVANCE / 600,
         "defaultProgrammingLigatures": "none",
         "defaultLiteralProgrammingSequences": programming_sequences,
@@ -1890,6 +1953,7 @@ def main() -> None:
             "behavior": "grayscale and symmetric smoothing without grid fitting",
         },
         "customProgrammingLigatures": sorted(CUSTOM_PROGRAMMING_LIGATURES),
+        "cellFittedGlyphs": sorted(CELL_FITTED),
         "instances": INSTANCES,
         "files": {
             str(path.relative_to(PROJECT)): {

@@ -1,4 +1,4 @@
-Copyright 2026 Claudia Nathan (CLN Mono design, direction, modifications, and original contributions)
+Copyright 2026 Claudia Nathan (Fractal Mono design, direction, modifications, and original contributions)
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 Portions from Whois Mono: Created by raphael with FontForge 2.0 (http://fontforge.sf.net)
 

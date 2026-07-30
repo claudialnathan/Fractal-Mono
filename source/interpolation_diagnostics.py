@@ -12,8 +12,8 @@ from fontTools.varLib.instancer import instantiateVariableFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
-OUTPUT = PROJECT / "specimens" / "CLNMono-RrK-nodes.svg"
+FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
+OUTPUT = PROJECT / "specimens" / "FractalMono-RrK-nodes.svg"
 GLYPHS = ("R", "r", "K")
 WEIGHTS = (100, 200, 450, 700, 800)
 SCALE = 0.20
@@ -108,7 +108,7 @@ def main() -> None:
     .weight {{ font-size: 16px; fill: #555550; }}
     .glyph {{ font-size: 15px; font-weight: 600; }}
   </style>
-  <text x="24" y="42" class="title">CLN Mono R/r/K — compatible node correspondence</text>
+  <text x="24" y="42" class="title">Fractal Mono R/r/K — compatible node correspondence</text>
   <text x="24" y="68" class="weight">Filled nodes are on-curve; open nodes are quadratic controls.</text>
   {"".join(elements)}
 </svg>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create a deterministic CLN Mono release archive."""
+"""Create a deterministic Fractal Mono release archive."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 PROJECT = Path(__file__).resolve().parents[1]
 VERSION = "1.305"
-OUTPUT = PROJECT / "archive" / f"CLNMono-v{VERSION}.zip"
+OUTPUT = PROJECT / "archive" / f"FractalMono-v{VERSION}.zip"
 FILES = (
     "README.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "OFL.txt",
-    "cln-mono.css",
+    "fractal-mono.css",
     "specimen.html",
     "specimen.css",
     "specimen.js",
@@ -25,13 +25,13 @@ FILES = (
     "ligature-audit.html",
     "build-report.json",
     "source/DESIGN_NOTES.md",
-    "specimens/CLNMono-specimen.png",
-    "specimens/CLNMono-specimen.pdf",
-    "specimens/CLNMono-outline-proof.svg",
-    "specimens/CLNMono-outline-proof.png",
-    "specimens/CLNMono-RrK-proof.svg",
-    "specimens/CLNMono-RrK-proof.png",
-    "specimens/CLNMono-RrK-nodes.svg",
+    "specimens/FractalMono-specimen.png",
+    "specimens/FractalMono-specimen.pdf",
+    "specimens/FractalMono-outline-proof.svg",
+    "specimens/FractalMono-outline-proof.png",
+    "specimens/FractalMono-RrK-proof.svg",
+    "specimens/FractalMono-RrK-proof.png",
+    "specimens/FractalMono-RrK-nodes.svg",
 )
 DIRECTORIES = ("fonts/desktop", "fonts/web")
 

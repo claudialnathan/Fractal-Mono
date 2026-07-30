@@ -1,0 +1,39 @@
+@font-face {
+  font-family: "Fractal Mono";
+  src:
+    url("./fonts/web/FractalMono-Variable.woff2") format("woff2") tech("variations"),
+    url("./fonts/web/FractalMono-Variable.woff2") format("woff2-variations"),
+    url("./fonts/web/FractalMono-Variable.woff") format("woff-variations");
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  font-variant-ligatures: none;
+}
+
+.fractal-mono {
+  font-family: "Fractal Mono", monospace;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.fractal-mono-text {
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 9;
+}
+
+.fractal-mono-display {
+  font-optical-sizing: none;
+  font-variation-settings: "opsz" 72;
+}
+
+.fractal-mono-programming-ligatures,
+.fractal-mono-operator-ligatures {
+  font-variant-ligatures: discretionary-ligatures;
+}

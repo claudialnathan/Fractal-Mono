@@ -1,5 +1,69 @@
 # Changelog
 
+## 1.400
+
+Renamed from CLN Mono to Fractal Mono. Family name, PostScript names, file names,
+and the repository all move; the OFL notices for JetBrains Mono and Whois Mono are
+unchanged.
+
+Weight axis:
+
+- Replaced the upstream `avar` mapping, which had been inherited unchanged while
+  the stem system was redesigned to `50/80/150`. Stem growth per 100 units of
+  `wght` ran from 8.9 between Light and Regular to 28.7 between Bold and
+  ExtraBold. The mapping is now computed from the family's own anchors and every
+  named step is the same proportional change, a ratio of 1.170. Thin, Regular, and
+  ExtraBold are unchanged; SemiBold and Bold are correspondingly heavier.
+- Added weight masters at design 461 and 620. The bold half previously
+  interpolated across one span from Book to ExtraBold.
+
+Stroke system:
+
+- Added `source/stroke_system.py`, which restates a declared stroke from the
+  approved Regular direction at the family's target thickness and rebuilds the
+  affected vertices as true intersections. Applied at Regular it reproduces the
+  approved outline exactly.
+- Corrected the diagonals on `K`, `M`, `W`, `k`, and `w`. Measured against the
+  stem, `K` ran from 1.40x at Thin to 0.63x at ExtraBold, `W` from 1.33x to 0.71x,
+  `M` from 1.17x to 0.53x; `k`'s arm and leg crossed over. All now hold inside the
+  0.72–1.00 band that Inter, ABC Diatype Mono, TT Commons Pro Mono, KH Teka Mono,
+  and Berkeley Mono keep across their own ranges.
+- Fixed the lowercase `w`, whose vertex cuts inverted from +20 units at Thin to
+  −79 at ExtraBold and produced real self-intersections from `wght` 300 up. A cut
+  now moves to the mitre rather than crossing it.
+- Rebuilt the asterisk's six arms through the stroke system. They had run
+  backwards, 76 units at Thin down to 64 at ExtraBold, so it gained 6% of ink
+  across an axis where letters gained 200%.
+- `K`'s stem now matches `H` at every weight and optical size. Fitting the cell
+  scales its arm and leg reach instead of the whole glyph.
+
+Dots and fitting:
+
+- Centred the counter dots in `O` and `zero`, which sat up to 10 units above
+  their counter centre and drifted with weight while lowercase `o` was correct.
+- All free-standing dots now derive from one shared size. `j`'s tittle had been
+  13% oversized at Display because it was measured from its own scaled bounds.
+- Square marks are built from one integer edge plus one integer size, so a dot
+  can no longer come out a unit off square.
+- Recentred 42 accented composites and wide symbols that left the cell at heavy
+  weights; the circumflex on `h` had reached 74 units past the left edge.
+
+Build and validation:
+
+- Builds are byte-reproducible; `head.modified` was the only field that moved.
+- Added `source/validate_geometry.py`, which samples 29 weights against 3 optical
+  sizes for self-intersection, diagonal-to-stem band, ink monotonicity, cell
+  containment, dot squareness, and counter-dot centring. Every defect above
+  shipped in 1.305 with the existing release validation passing.
+- Reference drawings are now asserted at every weight master rather than at one
+  off-master location, and the anchor is resolved through the release mapping
+  instead of assuming design and `wght` coincide.
+
+Known, unchanged from 1.305: the ring in `copyright` and `registered` is a curve
+the straight-stroke system cannot restate, and gains 43% of ink across the axis.
+48 glyphs carry a constant overlapping join inherited from the source master,
+resolved by the nonzero winding rule and present at the approved Regular.
+
 ## 1.305
 
 - Replaced offset-derived `R/r/K` endpoints with explicit compatible Thin, Book, and ExtraBold cubic masters.

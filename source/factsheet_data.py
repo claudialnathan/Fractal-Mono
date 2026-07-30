@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the verified data consumed by the public CLN Mono specimen."""
+"""Generate the verified data consumed by the public Fractal Mono specimen."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from fontTools.ttLib import TTFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-DEFAULT_FONT = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
+DEFAULT_FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
 DEFAULT_OUTPUT = PROJECT / "specimen-data.js"
 BUILD_REPORT = PROJECT / "build-report.json"
 LANGUAGE_SUPPORT = PROJECT / "source" / "language-support.json"
@@ -423,9 +423,9 @@ def generate(font_path: Path) -> dict[str, Any]:
         )
 
     return {
-        "family": name_value(font, 1, "CLN Mono"),
+        "family": name_value(font, 1, "Fractal Mono"),
         "version": name_value(font, 5, "Version 1.305"),
-        "postscriptName": name_value(font, 6, "CLNMono-Regular"),
+        "postscriptName": name_value(font, 6, "FractalMono-Regular"),
         "designer": name_value(font, 9),
         "license": name_value(font, 13),
         "licenseUrl": name_value(font, 14),
@@ -492,7 +492,7 @@ def main() -> None:
     args = parser.parse_args()
     data = generate(args.font)
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    args.output.write_text(f"window.CLN_MONO_DATA={payload};\n")
+    args.output.write_text(f"window.FRACTAL_MONO_DATA={payload};\n")
     print(
         f"Wrote {args.output} with {data['encodedCount']:,} characters, "
         f"{data['featureCount']} OpenType features, and "

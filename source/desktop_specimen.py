@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a self-contained CLN Mono type specimen."""
+"""Generate a self-contained Fractal Mono type specimen."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from fontTools.ttLib import TTFont
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-VARIABLE_TTF = PROJECT / "fonts" / "desktop" / "CLNMono-Variable.ttf"
-VARIABLE_WOFF2 = PROJECT / "fonts" / "web" / "CLNMono-Variable.woff2"
-OUTPUT = PROJECT / "specimens" / "CLN-Mono-Type-Specimen.html"
+VARIABLE_TTF = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
+VARIABLE_WOFF2 = PROJECT / "fonts" / "web" / "FractalMono-Variable.woff2"
+OUTPUT = PROJECT / "specimens" / "Fractal-Mono-Type-Specimen.html"
 
 
 INVISIBLE_LABELS = {
@@ -101,11 +101,11 @@ TEMPLATE = r'''<!doctype html>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
-    <title>CLN Mono — Type Specimen</title>
+    <title>Fractal Mono — Type Specimen</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23202020%22/><path d=%22M8 10h16v3H14v3h8v3h-8v3h10v3H8z%22 fill=%22white%22/></svg>" />
     <style>
       @font-face {
-        font-family: "CLN Mono Specimen";
+        font-family: "Fractal Mono Specimen";
         src: url("data:font/woff2;base64,__FONT_DATA__") format("woff2-variations");
         font-display: block;
         font-style: normal;
@@ -129,7 +129,7 @@ TEMPLATE = r'''<!doctype html>
         --specimen-weight: 400;
         color: var(--foreground);
         background: var(--background);
-        font-family: "CLN Mono Specimen", monospace;
+        font-family: "Fractal Mono Specimen", monospace;
         font-synthesis: none;
         font-variant-ligatures: none;
         text-rendering: optimizeLegibility;
@@ -794,8 +794,8 @@ TEMPLATE = r'''<!doctype html>
   <body>
     <main class="shell">
       <header class="hero">
-        <p class="kicker">CLN / Type system / 01</p>
-        <h1 class="variable">CLN MONO</h1>
+        <p class="kicker">Fractal / Type system / 01</p>
+        <h1 class="variable">Fractal MONO</h1>
         <p class="dek variable">
           A working specimen for reading, writing, and code — with the current
           variable build embedded directly into this file.
@@ -944,7 +944,7 @@ if (input !== null && count >= 3) {
           <div>Light UI / 13px<br />telltale toolkit network rarer<br />&lt;main data-state="ready"&gt;</div>
           <div class="dark">Dark UI / 13px<br />telltale toolkit network rarer<br />&lt;main data-state="ready"&gt;</div>
         </div>
-        <p class="raster-note">CLN Mono intentionally has no retained TrueType bytecode after its geometry changes. Its font metadata requests grayscale and symmetric smoothing without grid fitting, so the rasterisation instruction matches the outlines.</p>
+        <p class="raster-note">Fractal Mono intentionally has no retained TrueType bytecode after its geometry changes. Its font metadata requests grayscale and symmetric smoothing without grid fitting, so the rasterisation instruction matches the outlines.</p>
       </section>
 
       <section aria-labelledby="core-heading">
@@ -990,7 +990,7 @@ __GLYPH_TILES__
 
       <footer>
         <p>Self-contained specimen · embedded WOFF2 · no external requests</p>
-        <p>Character data read from the font’s Unicode cmap with open-source FontTools. Layout references the current CLN article kit; browser behaviour verified with Playwright.</p>
+        <p>Character data read from the font’s Unicode cmap with open-source FontTools. Layout references the current Fractal article kit; browser behaviour verified with Playwright.</p>
       </footer>
     </main>
 

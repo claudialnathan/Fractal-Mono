@@ -18,6 +18,7 @@ build: masters
 
 validate:
 	$(PYTHON) source/validate.py
+	$(PYTHON) source/validate_geometry.py
 
 test: validate
 	$(NPM) run test:browser
