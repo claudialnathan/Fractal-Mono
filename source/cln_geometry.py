@@ -54,10 +54,29 @@ def _reference_paths() -> dict[str, str]:
             "M41.040 12.360L27.600 12.360L27.600 0.000L41.040 0.000Z"
         ),
         "K": (
-            "M0.000 84.000L0.000 0.000L10.800 0.000L10.800 36.360"
-            "C12.000 35.040 13.320 33.480 14.640 31.920L42.720 0.000"
-            "L55.920 0.000L22.440 37.560L61.320 84.000L47.280 84.000"
-            "L15.360 45.480L10.800 50.640L10.800 84.000Z"
+            "M0.000 105.000L0.000 0.000L13.500 0.000L13.500 45.450"
+            "C15.000 43.800 16.650 41.850 18.300 39.900L53.400 0.000"
+            "L69.900 0.000L28.050 46.950L76.650 105.000L59.100 105.000"
+            "L19.200 56.850L13.500 63.300L13.500 105.000Z"
+        ),
+        "R": (
+            "M0.000 105.000L0.000 0.000L39.900 0.000"
+            "C59.850 0.000 72.750 9.900 72.750 27.600"
+            "C72.750 40.800 62.700 50.250 53.250 53.100"
+            "C63.300 54.750 70.350 63.300 70.350 77.100L70.350 105.000"
+            "L56.700 105.000L56.700 80.850"
+            "C56.700 64.200 50.250 59.100 34.650 59.100L13.650 59.100"
+            "L13.650 105.000L0.000 105.000Z"
+            "M13.650 47.550L36.450 47.550"
+            "C50.700 47.550 58.800 41.100 58.800 29.250"
+            "C58.800 17.400 50.700 11.400 36.450 11.400L13.650 11.400Z"
+        ),
+        "r": (
+            "M0.000 74.250L0.000 1.950L12.900 1.950L12.900 17.250"
+            "C16.650 9.150 25.350 0.000 44.400 0.000"
+            "C47.100 0.000 49.350 0.150 52.050 0.600L52.050 13.200"
+            "C49.500 12.900 46.500 12.600 43.200 12.600"
+            "C22.200 12.600 12.900 22.350 12.900 38.700L12.900 74.250Z"
         ),
         "M": (
             "M0.000 84.000L0.000 0.000L15.120 0.000L26.160 41.280"
@@ -147,13 +166,39 @@ class ReferenceSpec:
     reference_stem: float = REGULAR_STEM
     anchor_y: tuple[int, ...] = ()
     optical_x: bool = False
+    anchor_weight: float = 400
 
 
 CAP_SCALE = CAP_HEIGHT / 84
+FIGMA_CAP_SCALE = CAP_HEIGHT / 105
+FIGMA_LOWERCASE_SCALE = X_HEIGHT / 74.25
 REFERENCE_SPECS = {
     "J": ReferenceSpec(CAP_SCALE, CAP_HEIGHT, 79, (-47, CAP_HEIGHT), True),
     "j": ReferenceSpec(25 / 3, LOWERCASE_ASCENDER_HEIGHT, 79, (), False),
-    "K": ReferenceSpec(CAP_SCALE, CAP_HEIGHT, 87, (0, CAP_HEIGHT), True),
+    "K": ReferenceSpec(
+        FIGMA_CAP_SCALE,
+        CAP_HEIGHT,
+        87,
+        (0, CAP_HEIGHT),
+        True,
+        450,
+    ),
+    "R": ReferenceSpec(
+        FIGMA_CAP_SCALE,
+        CAP_HEIGHT,
+        88,
+        (0, CAP_HEIGHT),
+        True,
+        450,
+    ),
+    "r": ReferenceSpec(
+        FIGMA_LOWERCASE_SCALE,
+        X_HEIGHT,
+        92,
+        (0, X_HEIGHT),
+        False,
+        450,
+    ),
     "M": ReferenceSpec(CAP_SCALE, CAP_HEIGHT, 78, (0, CAP_HEIGHT), True),
     "W": ReferenceSpec(CAP_SCALE, CAP_HEIGHT, 80, (0, CAP_HEIGHT), True),
     "S": ReferenceSpec(CAP_SCALE, CAP_HEIGHT, 80, (0, CAP_HEIGHT), True),
@@ -169,7 +214,7 @@ REFERENCE_SPECS = {
 
 CUSTOM_GLYPH_NAMES = frozenset(REFERENCE_SPECS)
 PRESERVED_MASTER_GLYPH_NAMES = frozenset(
-    {"t", "f", "l", "r", "O", "o", "zero"}
+    {"t", "f", "l", "O", "o", "zero"}
 )
 SQUARE_MARK_NAMES = frozenset({"uni0307", "uni0308", "dotbelowcomb"})
 SIGNATURE_MASTERS_PATH = Path(__file__).with_name("signature_masters.json")
@@ -248,7 +293,12 @@ def _nearest_distinct(coordinates, indices: list[int], position: int, step: int)
     return origin
 
 
-def offset_glyph_stable(glyph, amount: float, anchor_y: tuple[int, ...]):
+def offset_glyph_stable(
+    glyph,
+    amount: float,
+    anchor_y: tuple[int, ...],
+    contour_multipliers: tuple[float, ...] | None = None,
+):
     """Offset explicit on-curve points and carry their movement into controls.
 
     Moving every quadratic control along its own local normal can reverse short
@@ -261,7 +311,10 @@ def offset_glyph_stable(glyph, amount: float, anchor_y: tuple[int, ...]):
         return glyph
     coordinates = list(glyph.coordinates)
     expanded = list(coordinates)
-    for contour_range in _contour_ranges(glyph):
+    for contour_index, contour_range in enumerate(_contour_ranges(glyph)):
+        contour_amount = amount
+        if contour_multipliers is not None:
+            contour_amount *= contour_multipliers[contour_index]
         indices = list(contour_range)
         area = _signed_area(coordinates, contour_range)
         outward_sign = 1 if area > 0 else -1
@@ -286,8 +339,8 @@ def offset_glyph_stable(glyph, amount: float, anchor_y: tuple[int, ...]):
                 continue
             normal_x = outward_sign * tangent_y / length
             normal_y = outward_sign * -tangent_x / length
-            delta_x = normal_x * amount
-            delta_y = normal_y * amount
+            delta_x = normal_x * contour_amount
+            delta_y = normal_y * contour_amount
             if any(abs(y - anchor) <= 1 for anchor in anchor_y):
                 delta_y = 0
             displacements[position] = (delta_x, delta_y)
@@ -457,7 +510,7 @@ def _apply_signature_optical_geometry(
     if opsz == DEFAULT_OPSZ:
         return
 
-    if name in {"J", "K", "M", "W", "S", "O"}:
+    if name in {"J", "K", "M", "R", "W", "S", "O"}:
         x_factor = optical_value(opsz, 1.005, 1, 0.975)
     elif name in {"j", "t", "f", "l", "r", "o"}:
         x_factor = optical_value(opsz, 1.010, 1, 0.980)
@@ -800,8 +853,6 @@ def install_preserved_master_glyphs(
         _apply_signature_optical_geometry(glyph_name, glyph, opsz)
         if glyph_name == "t":
             _stabilize_preserved_t(font, glyph)
-        elif glyph_name == "r":
-            _stabilize_preserved_r(font, glyph)
         elif glyph_name in {"f", "l"}:
             _stabilize_preserved_ascender(font, glyph_name, glyph)
         glyph.recalcBounds(glyphs)

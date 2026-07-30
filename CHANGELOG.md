@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.304
+
+- Redrew uppercase `R`, lowercase `r`, and uppercase `K` from compatible Book-weight masters.
+- Refit Thin through ExtraBold with uniform stroke growth and protected counters and apertures.
+- Added exact Book-master checks and a dedicated filled and outline proof across both axes.
+- Preserved every unrelated glyph against the previous release.
+
 ## 1.303
 
 - Rebuilt signature weight masters with compatible curve-handle movement.

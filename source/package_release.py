@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-VERSION = "1.303"
+VERSION = "1.304"
 OUTPUT = PROJECT / "archive" / f"CLNMono-v{VERSION}.zip"
 FILES = (
     "README.md",
@@ -29,6 +29,8 @@ FILES = (
     "specimens/CLNMono-specimen.pdf",
     "specimens/CLNMono-outline-proof.svg",
     "specimens/CLNMono-outline-proof.png",
+    "specimens/CLNMono-RrK-proof.svg",
+    "specimens/CLNMono-RrK-proof.png",
 )
 DIRECTORIES = ("fonts/desktop", "fonts/web")
 
@@ -48,7 +50,7 @@ def main() -> None:
     with ZipFile(OUTPUT, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for path in release_files():
             relative = path.relative_to(PROJECT).as_posix()
-            info = ZipInfo(relative, date_time=(2026, 7, 29, 0, 0, 0))
+            info = ZipInfo(relative, date_time=(2026, 7, 30, 0, 0, 0))
             info.compress_type = ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, path.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)

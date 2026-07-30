@@ -38,7 +38,7 @@ from cln_geometry import (
 
 
 FAMILY = "CLN Mono"
-VERSION = "1.303"
+VERSION = "1.304"
 UPM = 1000
 ADVANCE = 579
 

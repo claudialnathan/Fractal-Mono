@@ -418,7 +418,7 @@ def generate(font_path: Path) -> dict[str, Any]:
 
     return {
         "family": name_value(font, 1, "CLN Mono"),
-        "version": name_value(font, 5, "Version 1.303"),
+        "version": name_value(font, 5, "Version 1.304"),
         "postscriptName": name_value(font, 6, "CLNMono-Regular"),
         "designer": name_value(font, 9),
         "license": name_value(font, 13),

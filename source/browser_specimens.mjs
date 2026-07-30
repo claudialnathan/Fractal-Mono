@@ -72,10 +72,17 @@ await outline.goto(pathToFileURL(`${specimens}/CLNMono-outline-proof.svg`).href,
 });
 await outline.screenshot({ path: `${specimens}/CLNMono-outline-proof.png` });
 
+const signature = await browser.newPage({ viewport: { width: 1800, height: 1800 } });
+signature.on("pageerror", (error) => errors.push(`RrK proof: ${error.message}`));
+await signature.goto(pathToFileURL(`${specimens}/CLNMono-RrK-proof.svg`).href, {
+  waitUntil: "load",
+});
+await signature.screenshot({ path: `${specimens}/CLNMono-RrK-proof.png` });
+
 const failures = [
   results.codeLigatures !== "none" &&
     `code page does not disable ligatures: ${results.codeLigatures}`,
-  results.codeVersion !== "CLN Mono 1.303 · ligatures off" &&
+  results.codeVersion !== "CLN Mono 1.304 · ligatures off" &&
     `unexpected code-page version: ${results.codeVersion}`,
   results.ligatureToggleDefault && "ligature feature is enabled by default in the specimen",
   results.ligatureDefault !== "none" &&
@@ -86,7 +93,7 @@ const failures = [
   results.auditToggleDefault && "audit dlig preview is enabled by default",
   results.mainError && `main specimen error: ${results.mainError}`,
   results.mainOverflow > 1 && `main specimen overflows by ${results.mainOverflow}px`,
-  results.mainVersion !== "Version 1.303" &&
+  results.mainVersion !== "Version 1.304" &&
     `unexpected main specimen version: ${results.mainVersion}`,
   results.opticalDefault !== "14" &&
     `unexpected optical-size default: ${results.opticalDefault}`,
@@ -101,6 +108,7 @@ await Promise.all([
   audit.close(),
   main.close(),
   outline.close(),
+  signature.close(),
 ]);
 await browser.close();
 console.log(JSON.stringify({ ...results, errors }, null, 2));

@@ -21,7 +21,7 @@ The Text optical master raises the x-height, strengthens small details, and open
 - Square dots across `i`, `j`, punctuation, combining marks, and dotted counters
 - Upright roman; no synthetic italic
 
-The signature set includes the hooked `J/j`, bridged `K`, open `M`, pinched `W`, compact `S`, and angular `! ? ^ ; : *`. Thin and ExtraBold use corrected drawings rather than mechanically scaled endpoints.
+The signature set includes the hooked `J/j`, bridged `K`, compact `R/r`, open `M`, pinched `W`, compact `S`, and angular `! ? ^ ; : *`. Thin and ExtraBold use dedicated compatible masters that preserve counters, apertures, and stroke balance.
 
 ## Files
 
@@ -83,7 +83,7 @@ The build is self-contained. Its OFL upstream binary and compatible signature-ma
 
 ## Scope
 
-CLN Mono 1.303 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+CLN Mono 1.304 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
 
 ## Licence
 

@@ -21,6 +21,7 @@ Every spacing glyph keeps the same cell. Ink width, sidebearings, counters, join
 
 - `J/j` use a direct stem and compact low hook.
 - `K` uses a horizontal bridge and outward diagonal junction.
+- `R/r/K` are anchored by exact Book drawings and refit through dedicated compatible masters.
 - `M` has open inner joins; `W` has a pinched angular centre.
 - `S` stays compact and controlled through the heavy end of the axis.
 - `t` has a flat, parallel-sided ascender and short hook.
@@ -49,6 +50,13 @@ Optical size does not change cap height, vertical metrics, or the `579`-unit adv
 The outlines are deliberately unhinted. The `gasp` table requests grayscale and symmetric smoothing without grid fitting. Release validation covers the source contours, generated desktop and web fonts, interpolation grids, small-size rendering, and browser specimens.
 
 ## Release history
+
+### 1.304
+
+- Redraws `R/r/K` from exact Book-weight constructions.
+- Fits Thin and ExtraBold with counter-aware contour expansion.
+- Adds a dedicated `R/r/K` proof across every named weight and optical master.
+- Protects all unrelated glyphs against the preceding release.
 
 ### 1.303
 

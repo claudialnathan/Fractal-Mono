@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate compatible CLN signature masters from canonical drawings.
 
-The Regular master is the exact CLN reference geometry. The other masters
+Each drawing is exact at its measured reference weight. The other masters
 transfer the deformation field from the last clean pre-redesign CLN release,
 so weight changes follow an established type design instead of a mechanical
 outline offset.
@@ -22,7 +22,12 @@ from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
 from fontTools.varLib.instancer import instantiateVariableFont
 
-from cln_geometry import REFERENCE_SPECS, _reference_glyph
+from cln_geometry import (
+    REFERENCE_SPECS,
+    _reference_glyph,
+    offset_glyph_stable,
+    stem_for_weight,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +39,8 @@ CUSTOM_NAMES = (
     "J",
     "j",
     "K",
+    "R",
+    "r",
     "M",
     "W",
     "S",
@@ -45,7 +52,8 @@ CUSTOM_NAMES = (
     "asterisk",
     "period",
 )
-PRESERVED_NAMES = ("t", "f", "l", "r", "O", "o", "zero")
+PRESERVED_NAMES = ("t", "f", "l", "O", "o", "zero")
+CONTOUR_WEIGHT_NAMES = frozenset({"K", "R", "r"})
 SQUARE_CONTOURS = {
     "j": (1,),
     "exclam": (1,),
@@ -288,6 +296,45 @@ def _serialize_outline(
     }
 
 
+def _weight_key(weight: float) -> str:
+    return f"{weight:.6f}".rstrip("0").rstrip(".")
+
+
+def _solve_reference_anchor(
+    masters: dict[str, object],
+    weights: list[float],
+    name: str,
+) -> None:
+    """Make interpolation land exactly on an in-between reference drawing."""
+    anchor_weight = REFERENCE_SPECS[name].anchor_weight
+    if anchor_weight in weights:
+        return
+
+    lower, upper = next(
+        (lower, upper)
+        for lower, upper in zip(weights, weights[1:])
+        if lower < anchor_weight < upper
+    )
+    fraction = (anchor_weight - lower) / (upper - lower)
+    reference = _reference_glyph(name)
+    target = list(reference.coordinates)
+    lower_outline = masters[_weight_key(lower)][name]
+    upper_outline = masters[_weight_key(upper)][name]
+    if len(target) != len(lower_outline["coordinates"]):
+        raise ValueError(f"Reference topology differs at anchor for {name}")
+
+    upper_outline["coordinates"] = [
+        [
+            round((target_x - (1 - fraction) * lower_x) / fraction),
+            round((target_y - (1 - fraction) * lower_y) / fraction),
+        ]
+        for (target_x, target_y), (lower_x, lower_y) in zip(
+            target,
+            lower_outline["coordinates"],
+        )
+    ]
+
+
 def generate() -> dict[str, object]:
     archive_bytes = ARCHIVE.read_bytes()
     with ZipFile(BytesIO(archive_bytes)) as archive:
@@ -298,6 +345,11 @@ def generate() -> dict[str, object]:
         recalcTimestamp=False,
     )
     weights = _master_weights(variable)
+    reference_weights = {
+        spec.anchor_weight
+        for name, spec in REFERENCE_SPECS.items()
+        if name in CUSTOM_NAMES
+    }
     archived = {
         weight: instantiateVariableFont(
             variable,
@@ -305,25 +357,40 @@ def generate() -> dict[str, object]:
             inplace=False,
             optimize=True,
         )
-        for weight in weights
+        for weight in sorted(set(weights) | reference_weights)
     }
-    archived_regular = archived[400.0]
 
     masters: dict[str, object] = {}
     for weight in weights:
-        weight_key = f"{weight:.6f}".rstrip("0").rstrip(".")
+        weight_key = _weight_key(weight)
         master: dict[str, object] = {}
         for name in CUSTOM_NAMES:
+            anchor_weight = REFERENCE_SPECS[name].anchor_weight
             reference = _reference_glyph(name)
             coordinates = GlyphCoordinates(reference.coordinates)
             endpoints = list(reference.endPtsOfContours)
             flags = bytearray(reference.flags)
 
-            if weight != 400 and name != "period":
-                old_regular, _, _ = _simple_outline(archived_regular, name)
+            if weight != anchor_weight and name in CONTOUR_WEIGHT_NAMES:
+                weighted = offset_glyph_stable(
+                    reference,
+                    (
+                        stem_for_weight(weight)
+                        - REFERENCE_SPECS[name].reference_stem
+                    )
+                    / 2,
+                    REFERENCE_SPECS[name].anchor_y,
+                    (1, -1) if name == "R" else None,
+                )
+                coordinates = GlyphCoordinates(weighted.coordinates)
+            elif weight != anchor_weight and name != "period":
+                old_reference, _, _ = _simple_outline(
+                    archived[anchor_weight],
+                    name,
+                )
                 old_master, _, _ = _simple_outline(archived[weight], name)
                 controls, coefficients = _fit_deformation(
-                    old_regular,
+                    old_reference,
                     old_master,
                 )
                 coordinates = _apply_deformation(
@@ -366,6 +433,9 @@ def generate() -> dict[str, object]:
                 )
             master[name] = _serialize_outline(coordinates, endpoints, flags)
         masters[weight_key] = master
+
+    for name in CUSTOM_NAMES:
+        _solve_reference_anchor(masters, weights, name)
 
     names = (*CUSTOM_NAMES, *PRESERVED_NAMES)
     first = masters[next(iter(masters))]

@@ -17,15 +17,18 @@ from zipfile import ZipFile
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
+from cln_geometry import _reference_glyph
+
 
 PROJECT = Path(__file__).resolve().parents[1]
 DESKTOP = PROJECT / "fonts" / "desktop"
 WEB = PROJECT / "fonts" / "web"
 VARIABLE = DESKTOP / "CLNMono-Variable.ttf"
 BUILD_REPORT = PROJECT / "build-report.json"
-PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.252.zip"
+PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.303.zip"
+PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.303"
+VERSION = "1.304"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -39,18 +42,24 @@ REGULAR_STEM_RANGE = range(77, 84)
 NAMED_WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
 ALWAYS_LITERAL_LIGATURE_SEQUENCES = {"/\\", "\\/", "|||"}
 HINTING_TABLES = {"cvt ", "fpgm", "prep", "hdmx", "LTSH", "VDMX"}
+REFERENCE_DEPENDENTS = {
+    "R": ("Racute", "Rcaron", "uni0156"),
+    "r": ("racute", "rcaron", "uni0157"),
+    "K": ("uni0136", "uni041A", "uni040C", "Kappa"),
+}
 
 CUSTOM_TOPOLOGY = {
     "J": (1, 28),
     "j": (2, 20),
     "K": (1, 15),
+    "R": (2, 33),
     "M": (1, 25),
     "W": (1, 31),
     "S": (1, 61),
     "f": (1, 20),
     "l": (1, 10),
     "t": (1, 20),
-    "r": (1, 28),
+    "r": (1, 20),
     "exclam": (2, 10),
     "question": (2, 33),
     "asciicircum": (1, 8),
@@ -113,6 +122,51 @@ def glyph_bounds(font: TTFont, glyph_name: str) -> tuple[int, int, int, int]:
     glyph = font["glyf"][glyph_name]
     glyph.recalcBounds(font["glyf"])
     return glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax
+
+
+def assert_reference_drawings(variable: TTFont) -> None:
+    """Prove the Book instance retains the supplied R/r/K constructions."""
+    book = instantiateVariableFont(
+        variable,
+        {"wght": 450, "opsz": DEFAULT_OPSZ},
+        inplace=False,
+        optimize=True,
+    )
+    for glyph_name in ("R", "r", "K"):
+        expected = _reference_glyph(glyph_name)
+        actual = book["glyf"][glyph_name]
+        assert list(actual.endPtsOfContours) == list(expected.endPtsOfContours), (
+            glyph_name,
+            "reference topology",
+        )
+        assert [flag & 1 for flag in actual.flags] == [
+            flag & 1 for flag in expected.flags
+        ], (
+            glyph_name,
+            "reference flags",
+        )
+        assert len(actual.coordinates) == len(expected.coordinates)
+        for current, target in zip(actual.coordinates, expected.coordinates):
+            assert math.dist(current, target) <= 1.0, (
+                glyph_name,
+                "Book reference",
+                current,
+                target,
+            )
+        assert book["hmtx"].metrics[glyph_name][0] == ADVANCE
+
+
+def assert_reference_dependents(variable: TTFont) -> int:
+    """Ensure language derivatives inherit the new base drawings."""
+    for base, dependents in REFERENCE_DEPENDENTS.items():
+        for glyph_name in dependents:
+            glyph = variable["glyf"][glyph_name]
+            assert glyph.isComposite(), (glyph_name, "expected composite")
+            assert any(
+                component.glyphName == base for component in glyph.components
+            ), (glyph_name, base, "missing base component")
+            assert variable["hmtx"].metrics[glyph_name][0] == ADVANCE
+    return sum(len(dependents) for dependents in REFERENCE_DEPENDENTS.values())
 
 
 def contour_signature(
@@ -337,15 +391,9 @@ def depends_on(
 
 
 def assert_default_preservation(variable: TTFont) -> int:
-    assert PREVIOUS_RELEASE.exists(), "Missing v1.252 regression archive"
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.303 regression archive"
     with ZipFile(PREVIOUS_RELEASE) as archive:
-        previous = TTFont(
-            BytesIO(
-                archive.read(
-                    "fonts/desktop/CLNMono-Variable[wght].ttf"
-                )
-            )
-        )
+        previous = TTFont(BytesIO(archive.read(PREVIOUS_FONT)))
 
     preserved: set[str] = set()
     for weight in (100, 400, 800):
@@ -356,7 +404,7 @@ def assert_default_preservation(variable: TTFont) -> int:
         )
         previous_instance = instantiateVariableFont(
             previous,
-            {"wght": weight},
+            {"wght": weight, "opsz": DEFAULT_OPSZ},
             inplace=False,
         )
         current_cmap = current_instance.getBestCmap()
@@ -398,7 +446,7 @@ def assert_default_preservation(variable: TTFont) -> int:
             )
             previous_instance = instantiateVariableFont(
                 previous,
-                {"wght": weight},
+                {"wght": weight, "opsz": DEFAULT_OPSZ},
                 inplace=False,
             )
             assert glyph_signature(
@@ -413,15 +461,9 @@ def assert_default_preservation(variable: TTFont) -> int:
 
 def assert_round_dotted_bowls_preserved(variable: TTFont) -> None:
     """Protect established bowls while allowing only their final dot to change."""
-    assert PREVIOUS_RELEASE.exists(), "Missing v1.252 regression archive"
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.303 regression archive"
     with ZipFile(PREVIOUS_RELEASE) as archive:
-        previous = TTFont(
-            BytesIO(
-                archive.read(
-                    "fonts/desktop/CLNMono-Variable[wght].ttf"
-                )
-            )
-        )
+        previous = TTFont(BytesIO(archive.read(PREVIOUS_FONT)))
 
     for weight in (100, 400, 800):
         current_instance = instantiateVariableFont(
@@ -431,7 +473,7 @@ def assert_round_dotted_bowls_preserved(variable: TTFont) -> None:
         )
         previous_instance = instantiateVariableFont(
             previous,
-            {"wght": weight},
+            {"wght": weight, "opsz": DEFAULT_OPSZ},
             inplace=False,
         )
         for glyph_name in ("O", "o", "zero"):
@@ -642,6 +684,8 @@ def main() -> None:
     }
     for tag in ("avar", "STAT", "gasp", "HVAR"):
         assert tag in variable, f"Missing {tag} table"
+    assert_reference_drawings(variable)
+    reference_dependent_count = assert_reference_dependents(variable)
 
     feature_records = variable["GSUB"].table.FeatureList.FeatureRecord
     dlig_features = [
@@ -749,6 +793,9 @@ def main() -> None:
         h_coordinates, _, _ = instance["glyf"]["H"].getCoordinates(
             instance["glyf"]
         )
+        h_vertical_stroke = round(
+            abs(h_coordinates[2][0] - h_coordinates[1][0])
+        )
         h_y = sorted({round(y) for _, y in h_coordinates})
         h_horizontal_stroke = h_y[-2] - h_y[1]
         assert t_crossbar_top - t_crossbar_bottom == h_horizontal_stroke, (
@@ -822,18 +869,31 @@ def main() -> None:
         ) + 1, (weight, opsz, "J terminal control reversal")
 
         k_coordinates = instance["glyf"]["K"].coordinates
+        upper_bridge_limits = sorted(
+            (k_coordinates[3][0], k_coordinates[6][0])
+        )
+        assert all(
+            upper_bridge_limits[0] - 4
+            <= k_coordinates[index][0]
+            <= upper_bridge_limits[1] + 4
+            for index in (4, 5)
+        ), (weight, opsz, "K upper bridge control escape")
+        lower_bridge_limits = sorted(
+            (k_coordinates[6][0], k_coordinates[9][0])
+        )
         assert (
-            k_coordinates[3][0]
-            <= k_coordinates[4][0]
-            <= k_coordinates[5][0]
-            <= k_coordinates[6][0]
-            < k_coordinates[9][0]
-        ), (weight, opsz, "K upper bridge reversal")
-        assert (
-            k_coordinates[13][0]
+            lower_bridge_limits[0]
             <= k_coordinates[12][0]
-            < k_coordinates[9][0]
-        ), (weight, opsz, "K lower bridge reversal")
+            <= lower_bridge_limits[1]
+        ), (weight, opsz, "K lower bridge control escape")
+        k_stem = round(k_coordinates[2][0] - k_coordinates[1][0])
+        assert abs(k_stem - h_vertical_stroke) <= 6, (
+            weight,
+            opsz,
+            "K/H vertical stroke",
+            k_stem,
+            h_vertical_stroke,
+        )
 
         s_coordinates = instance["glyf"]["S"].coordinates
         assert round(s_coordinates[0][1]) == round(s_coordinates[1][1]), (
@@ -851,26 +911,82 @@ def main() -> None:
             for index in (24, 25, 27, 28, 54, 55, 57, 58)
         ), (weight, opsz, "S hard-zone overshoot")
 
-        r_coordinates = instance["glyf"]["r"].coordinates
-        assert round(r_coordinates[0][1]) == round(r_coordinates[1][1]), (
+        r_cap_coordinates = instance["glyf"]["R"].coordinates
+        r_cap_stem = round(
+            r_cap_coordinates[23][0] - r_cap_coordinates[0][0]
+        )
+        assert abs(r_cap_stem - h_vertical_stroke) <= 4, (
             weight,
             opsz,
-            "r stem cap",
+            "R/H vertical stroke",
+            r_cap_stem,
+            h_vertical_stroke,
         )
+        r_cap_counter = contour_bounds(instance, "R", 1)
+        counter_width = r_cap_counter[2] - r_cap_counter[0]
+        counter_height = r_cap_counter[3] - r_cap_counter[1]
+        assert counter_width >= 235 and counter_height >= 195, (
+            weight,
+            opsz,
+            "R counter closure",
+            r_cap_counter,
+        )
+        r_cap_bounds = glyph_bounds(instance, "R")
+        assert (
+            r_cap_bounds[0] < r_cap_counter[0] < r_cap_counter[2] < r_cap_bounds[2]
+        ), (weight, opsz, "R counter containment")
+        assert abs(
+            (r_cap_counter[0] - r_cap_bounds[0]) - h_vertical_stroke
+        ) <= 8, (weight, opsz, "R left bowl stroke")
+        assert abs(
+            (r_cap_bounds[2] - r_cap_counter[2]) - h_vertical_stroke
+        ) <= 12, (weight, opsz, "R right bowl stroke")
+
+        r_coordinates = instance["glyf"]["r"].coordinates
+        assert abs(r_coordinates[0][0] - r_coordinates[1][0]) <= 1, (
+            weight,
+            opsz,
+            "r left stem edge",
+        )
+        assert abs(r_coordinates[18][0] - r_coordinates[19][0]) <= 3, (
+            weight,
+            opsz,
+            "r right stem edge",
+        )
+        assert abs(r_coordinates[11][0] - r_coordinates[12][0]) <= 1, (
+            weight,
+            opsz,
+            "r terminal edge",
+        )
+        assert all(
+            r_coordinates[current][0] < r_coordinates[following][0]
+            for current, following in zip(
+                (4, 5, 6, 7, 8, 9, 10),
+                (5, 6, 7, 8, 9, 10, 11),
+            )
+        ), (weight, opsz, "r outer shoulder reversal")
         assert all(
             r_coordinates[current][0] > r_coordinates[following][0]
             for current, following in zip(
-                (10, 11, 12, 13, 14, 15),
-                (11, 12, 13, 14, 15, 16),
+                (12, 13, 14),
+                (13, 14, 15),
             )
         ), (weight, opsz, "r inner shoulder fold")
-        assert all(
-            r_coordinates[current][1] < r_coordinates[following][1]
-            for current, following in zip(
-                (10, 11, 12, 13, 14, 15),
-                (11, 12, 13, 14, 15, 16),
-            )
-        ), (weight, opsz, "r inner shoulder bump")
+        aperture = r_coordinates[11][0] - r_coordinates[15][0]
+        assert aperture >= max(38, h_vertical_stroke * 0.55), (
+            weight,
+            opsz,
+            "r aperture",
+            aperture,
+        )
+        r_stem = round(r_coordinates[19][0] - r_coordinates[0][0])
+        assert abs(r_stem - h_vertical_stroke) <= 9, (
+            weight,
+            opsz,
+            "r/H vertical stroke",
+            r_stem,
+            h_vertical_stroke,
+        )
 
         semicolon_tail = contour_signature(instance, "semicolon", 1)
         assert len({x for x, _ in semicolon_tail}) > 2, (
@@ -1052,10 +1168,12 @@ def main() -> None:
     print("PASS: transformed outlines are unhinted and request grayscale smoothing")
     print(f"PASS: 95 printable ASCII characters retain a {ADVANCE}-unit advance across the axis grid")
     print("PASS: Text/Auto/Display masters set x-height to 540/528/500 with cap height fixed")
-    print("PASS: J/j/K/M/W/S and punctuation designs interpolate at both axes")
+    print("PASS: J/j/K/R/r/M/W/S and punctuation designs interpolate at both axes")
+    print("PASS: R/r/K reproduce their exact Book reference drawings")
+    print(f"PASS: {reference_dependent_count} accented and cross-script R/r/K derivatives inherit the new bases")
     print("PASS: Thin and ExtraBold drawings retain open counters and cell containment")
     print("PASS: lowercase t keeps a flat cap, parallel ascender, and H-matched crossbar/foot")
-    print("PASS: r, J/j, K, and S keep monotone joins and uniform terminals at every named weight")
+    print("PASS: R/r/K keep open counters, monotone joins, and H-matched strokes at every named weight")
     print("PASS: lowercase f/l raised terminals preserve their local stroke through opsz")
     print("PASS: every square dot uses a clean native four-point contour")
     print("PASS: custom outlines contain no duplicate, closing, or zero-area contours")
@@ -1066,7 +1184,7 @@ def main() -> None:
     print("PASS: 150 programming ligatures remain optional under dlig; 3 stay literal")
     print("PASS: four-character repeats remain literal instead of partially ligating")
     print(f"PASS: Regular H stem {h_stem} with optically lighter {h_horizontal_stem}-unit crossbar")
-    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.252 default design")
+    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.303 default design")
 
 
 if __name__ == "__main__":
