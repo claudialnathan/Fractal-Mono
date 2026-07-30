@@ -8,7 +8,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
 PROJECT = Path(__file__).resolve().parents[1]
-VERSION = "1.304"
+VERSION = "1.305"
 OUTPUT = PROJECT / "archive" / f"CLNMono-v{VERSION}.zip"
 FILES = (
     "README.md",
@@ -31,6 +31,7 @@ FILES = (
     "specimens/CLNMono-outline-proof.png",
     "specimens/CLNMono-RrK-proof.svg",
     "specimens/CLNMono-RrK-proof.png",
+    "specimens/CLNMono-RrK-nodes.svg",
 )
 DIRECTORIES = ("fonts/desktop", "fonts/web")
 

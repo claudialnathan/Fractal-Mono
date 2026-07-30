@@ -18,15 +18,22 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import numpy as np
+from fontTools.cu2qu.cu2qu import curves_to_quadratic
+from fontTools.misc.transform import Transform
+from fontTools.pens.recordingPen import RecordingPen
+from fontTools.pens.transformPen import TransformPen
+from fontTools.pens.ttGlyphPen import TTGlyphPen
+from fontTools.svgLib.path import parse_path
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
 from fontTools.varLib.instancer import instantiateVariableFont
 
 from cln_geometry import (
+    ADVANCE,
+    REFERENCE_PATHS,
     REFERENCE_SPECS,
+    _path_bounds,
     _reference_glyph,
-    offset_glyph_stable,
-    stem_for_weight,
 )
 
 
@@ -53,7 +60,7 @@ CUSTOM_NAMES = (
     "period",
 )
 PRESERVED_NAMES = ("t", "f", "l", "O", "o", "zero")
-CONTOUR_WEIGHT_NAMES = frozenset({"K", "R", "r"})
+EXPLICIT_CUBIC_NAMES = frozenset({"K", "R", "r"})
 SQUARE_CONTOURS = {
     "j": (1,),
     "exclam": (1,),
@@ -63,6 +70,268 @@ SQUARE_CONTOURS = {
     "period": (0,),
 }
 SQUARE_SIZES = {100.0: 98.0, 400.0: 112.0, 800.0: 144.0}
+
+
+def _extreme_cubic_commands() -> dict[str, dict[float, list[tuple[str, tuple]]]]:
+    """Return hand-authored Thin and ExtraBold drawings in font coordinates.
+
+    These are genuine endpoint masters, not offsets from the supplied Book
+    drawing. Every flat, vertical, curve tangent, and join has the same
+    semantic role at both extremes.
+    """
+    return {
+        "K": {
+            100.0: [
+                ("moveTo", ((58, 0),)),
+                ("lineTo", ((58, 680),)),
+                ("lineTo", ((110, 680),)),
+                ("lineTo", ((110, 386),)),
+                ("curveTo", ((117, 395), (129, 412), (140, 424))),
+                ("lineTo", ((397, 680),)),
+                ("lineTo", ((477, 680),)),
+                ("lineTo", ((204, 376),)),
+                ("lineTo", ((521, 0),)),
+                ("lineTo", ((435, 0),)),
+                ("lineTo", ((177, 326),)),
+                ("lineTo", ((110, 272),)),
+                ("lineTo", ((110, 0),)),
+                ("lineTo", ((58, 0),)),
+                ("closePath", ()),
+            ],
+            800.0: [
+                ("moveTo", ((18, 0),)),
+                ("lineTo", ((18, 680),)),
+                ("lineTo", ((164, 680),)),
+                ("lineTo", ((164, 386),)),
+                ("curveTo", ((174, 398), (192, 424), (207, 440))),
+                ("lineTo", ((368, 680),)),
+                ("lineTo", ((518, 680),)),
+                ("lineTo", ((256, 378),)),
+                ("lineTo", ((561, 0),)),
+                ("lineTo", ((403, 0),)),
+                ("lineTo", ((190, 294),)),
+                ("lineTo", ((164, 266),)),
+                ("lineTo", ((164, 0),)),
+                ("lineTo", ((18, 0),)),
+                ("closePath", ()),
+            ],
+        },
+        "R": {
+            100.0: [
+                ("moveTo", ((72, 0),)),
+                ("lineTo", ((72, 680),)),
+                ("lineTo", ((312, 680),)),
+                ("curveTo", ((430, 680), (506, 625), (506, 505))),
+                ("curveTo", ((506, 420), (451, 345), (390, 322))),
+                ("curveTo", ((452, 312), (492, 250), (492, 181))),
+                ("lineTo", ((492, 0),)),
+                ("lineTo", ((440, 0),)),
+                ("lineTo", ((440, 156),)),
+                ("curveTo", ((440, 250), (382, 282), (278, 282))),
+                ("lineTo", ((124, 282),)),
+                ("lineTo", ((124, 0),)),
+                ("lineTo", ((72, 0),)),
+                ("closePath", ()),
+                ("moveTo", ((124, 358),)),
+                ("lineTo", ((290, 358),)),
+                ("curveTo", ((390, 358), (454, 407), (454, 491))),
+                ("curveTo", ((454, 575), (390, 626), (290, 626))),
+                ("lineTo", ((124, 626),)),
+                ("lineTo", ((124, 358),)),
+                ("closePath", ()),
+            ],
+            800.0: [
+                ("moveTo", ((23, 0),)),
+                ("lineTo", ((23, 680),)),
+                ("lineTo", ((312, 680),)),
+                ("curveTo", ((464, 680), (556, 610), (556, 491))),
+                ("curveTo", ((556, 410), (495, 362), (414, 360))),
+                ("curveTo", ((484, 344), (538, 275), (538, 190))),
+                ("lineTo", ((538, 0),)),
+                ("lineTo", ((392, 0),)),
+                ("lineTo", ((392, 145),)),
+                ("curveTo", ((392, 230), (354, 266), (278, 266))),
+                ("lineTo", ((172, 266),)),
+                ("lineTo", ((172, 0),)),
+                ("lineTo", ((23, 0),)),
+                ("closePath", ()),
+                ("moveTo", ((172, 414),)),
+                ("lineTo", ((290, 414),)),
+                ("curveTo", ((356, 414), (406, 444), (406, 491))),
+                ("curveTo", ((406, 538), (356, 558), (290, 558))),
+                ("lineTo", ((172, 558),)),
+                ("lineTo", ((172, 414),)),
+                ("closePath", ()),
+            ],
+        },
+        "r": {
+            100.0: [
+                ("moveTo", ((125, 0),)),
+                ("lineTo", ((125, 514),)),
+                ("lineTo", ((176, 514),)),
+                ("lineTo", ((176, 420),)),
+                ("curveTo", ((202, 477), (280, 528), (420, 528))),
+                ("curveTo", ((438, 528), (455, 527), (473, 524))),
+                ("lineTo", ((473, 468),)),
+                ("curveTo", ((456, 470), (436, 472), (412, 472))),
+                ("curveTo", ((274, 472), (176, 408), (176, 302))),
+                ("lineTo", ((176, 0),)),
+                ("lineTo", ((125, 0),)),
+                ("closePath", ()),
+            ],
+            800.0: [
+                ("moveTo", ((75, 0),)),
+                ("lineTo", ((75, 514),)),
+                ("lineTo", ((223, 514),)),
+                ("lineTo", ((223, 365),)),
+                ("curveTo", ((260, 451), (334, 528), (430, 528))),
+                ("curveTo", ((464, 528), (490, 526), (513, 522))),
+                ("lineTo", ((513, 372),)),
+                ("curveTo", ((483, 376), (449, 380), (412, 380))),
+                ("curveTo", ((306, 380), (223, 325), (223, 175))),
+                ("lineTo", ((223, 0),)),
+                ("lineTo", ((75, 0),)),
+                ("closePath", ()),
+            ],
+        },
+    }
+
+
+def _canonical_cubic_commands(name: str) -> list[tuple[str, tuple]]:
+    path = REFERENCE_PATHS[name]
+    spec = REFERENCE_SPECS[name]
+    x_min, y_min, x_max, _ = _path_bounds(path)
+    center_x = (x_min + x_max) / 2
+    transform = Transform(
+        spec.scale,
+        0,
+        0,
+        -spec.scale,
+        ADVANCE / 2 - center_x * spec.scale,
+        spec.top + y_min * spec.scale,
+    )
+    pen = RecordingPen()
+    parse_path(path, TransformPen(pen, transform))
+    return pen.value
+
+
+def _interpolate_commands(
+    name: str,
+    weight: float,
+) -> list[tuple[str, tuple]]:
+    extremes = _extreme_cubic_commands()[name]
+    authored = {
+        100.0: extremes[100.0],
+        450.0: _canonical_cubic_commands(name),
+        800.0: extremes[800.0],
+    }
+    if weight in authored:
+        return authored[weight]
+
+    lower, upper = next(
+        (lower, upper)
+        for lower, upper in zip(sorted(authored), sorted(authored)[1:])
+        if lower < weight < upper
+    )
+    fraction = (weight - lower) / (upper - lower)
+    lower_commands = authored[lower]
+    upper_commands = authored[upper]
+    if len(lower_commands) != len(upper_commands):
+        raise ValueError(f"Incompatible cubic command counts for {name}")
+
+    result: list[tuple[str, tuple]] = []
+    for (lower_op, lower_args), (upper_op, upper_args) in zip(
+        lower_commands,
+        upper_commands,
+    ):
+        if lower_op != upper_op or len(lower_args) != len(upper_args):
+            raise ValueError(f"Incompatible cubic commands for {name}")
+        args = tuple(
+            (
+                lower_point[0]
+                + (upper_point[0] - lower_point[0]) * fraction,
+                lower_point[1]
+                + (upper_point[1] - lower_point[1]) * fraction,
+            )
+            for lower_point, upper_point in zip(lower_args, upper_args)
+        )
+        result.append((lower_op, args))
+    return result
+
+
+def _commands_to_compatible_quadratics(
+    commands_by_weight: dict[float, list[tuple[str, tuple]]],
+) -> dict[float, object]:
+    """Convert corresponding cubic curves as one compatibility batch."""
+    weights = sorted(commands_by_weight)
+    pens = {weight: TTGlyphPen(None) for weight in weights}
+    current_points: dict[float, tuple[float, float] | None] = {
+        weight: None for weight in weights
+    }
+    command_count = len(commands_by_weight[weights[0]])
+    if any(len(commands_by_weight[weight]) != command_count for weight in weights):
+        raise ValueError("Incompatible cubic command counts")
+
+    for command_index in range(command_count):
+        operations = {
+            commands_by_weight[weight][command_index][0] for weight in weights
+        }
+        if len(operations) != 1:
+            raise ValueError("Incompatible cubic operation order")
+        operation = operations.pop()
+        arguments = {
+            weight: commands_by_weight[weight][command_index][1]
+            for weight in weights
+        }
+
+        if operation in {"moveTo", "lineTo"}:
+            for weight in weights:
+                point = arguments[weight][0]
+                getattr(pens[weight], operation)(point)
+                current_points[weight] = point
+        elif operation == "curveTo":
+            curves = []
+            for weight in weights:
+                current = current_points[weight]
+                if current is None:
+                    raise ValueError("Cubic segment has no current point")
+                curves.append([current, *arguments[weight]])
+            quadratics = curves_to_quadratic(
+                curves,
+                [0.55] * len(curves),
+                all_quadratic=True,
+            )
+            for weight, quadratic in zip(weights, quadratics):
+                pens[weight].qCurveTo(*quadratic[1:])
+                current_points[weight] = arguments[weight][-1]
+        elif operation == "closePath":
+            for weight in weights:
+                pens[weight].closePath()
+                current_points[weight] = None
+        else:
+            raise ValueError(f"Unsupported cubic operation: {operation}")
+
+    glyphs = {weight: pens[weight].glyph() for weight in weights}
+    for glyph in glyphs.values():
+        glyph.coordinates = GlyphCoordinates(
+            [(round(x), round(y)) for x, y in glyph.coordinates]
+        )
+    return glyphs
+
+
+def _explicit_cubic_glyphs(
+    weights: list[float],
+) -> dict[float, dict[str, object]]:
+    result = {weight: {} for weight in weights}
+    for name in sorted(EXPLICIT_CUBIC_NAMES):
+        commands = {
+            weight: _interpolate_commands(name, weight)
+            for weight in weights
+        }
+        glyphs = _commands_to_compatible_quadratics(commands)
+        for weight, glyph in glyphs.items():
+            result[weight][name] = glyph
+    return result
 
 
 def _inverse_piecewise(points: dict[float, float], target: float) -> float:
@@ -304,6 +573,7 @@ def _solve_reference_anchor(
     masters: dict[str, object],
     weights: list[float],
     name: str,
+    reference=None,
 ) -> None:
     """Make interpolation land exactly on an in-between reference drawing."""
     anchor_weight = REFERENCE_SPECS[name].anchor_weight
@@ -316,7 +586,8 @@ def _solve_reference_anchor(
         if lower < anchor_weight < upper
     )
     fraction = (anchor_weight - lower) / (upper - lower)
-    reference = _reference_glyph(name)
+    if reference is None:
+        reference = _reference_glyph(name)
     target = list(reference.coordinates)
     lower_outline = masters[_weight_key(lower)][name]
     upper_outline = masters[_weight_key(upper)][name]
@@ -359,6 +630,9 @@ def generate() -> dict[str, object]:
         )
         for weight in sorted(set(weights) | reference_weights)
     }
+    explicit_cubic_glyphs = _explicit_cubic_glyphs(
+        sorted(set(weights) | {450.0})
+    )
 
     masters: dict[str, object] = {}
     for weight in weights:
@@ -366,23 +640,19 @@ def generate() -> dict[str, object]:
         master: dict[str, object] = {}
         for name in CUSTOM_NAMES:
             anchor_weight = REFERENCE_SPECS[name].anchor_weight
-            reference = _reference_glyph(name)
+            reference = explicit_cubic_glyphs[450.0].get(
+                name,
+                _reference_glyph(name),
+            )
             coordinates = GlyphCoordinates(reference.coordinates)
             endpoints = list(reference.endPtsOfContours)
             flags = bytearray(reference.flags)
 
-            if weight != anchor_weight and name in CONTOUR_WEIGHT_NAMES:
-                weighted = offset_glyph_stable(
-                    reference,
-                    (
-                        stem_for_weight(weight)
-                        - REFERENCE_SPECS[name].reference_stem
-                    )
-                    / 2,
-                    REFERENCE_SPECS[name].anchor_y,
-                    (1, -1) if name == "R" else None,
-                )
-                coordinates = GlyphCoordinates(weighted.coordinates)
+            if name in EXPLICIT_CUBIC_NAMES:
+                explicit = explicit_cubic_glyphs[weight][name]
+                coordinates = GlyphCoordinates(explicit.coordinates)
+                endpoints = list(explicit.endPtsOfContours)
+                flags = bytearray(explicit.flags)
             elif weight != anchor_weight and name != "period":
                 old_reference, _, _ = _simple_outline(
                     archived[anchor_weight],
@@ -435,7 +705,16 @@ def generate() -> dict[str, object]:
         masters[weight_key] = master
 
     for name in CUSTOM_NAMES:
-        _solve_reference_anchor(masters, weights, name)
+        _solve_reference_anchor(
+            masters,
+            weights,
+            name,
+            (
+                explicit_cubic_glyphs[450.0][name]
+                if name in EXPLICIT_CUBIC_NAMES
+                else None
+            ),
+        )
 
     names = (*CUSTOM_NAMES, *PRESERVED_NAMES)
     first = masters[next(iter(masters))]

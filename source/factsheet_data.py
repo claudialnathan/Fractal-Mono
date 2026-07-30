@@ -220,6 +220,12 @@ FEATURE_DETAILS: dict[str, dict[str, str]] = {
         "status": "optional",
         "description": "Applies the font’s named closed-construction alternate set.",
     },
+    "ss03": {
+        "name": "Dotless counters",
+        "sample": "O o 0",
+        "status": "optional",
+        "description": "Removes the default square centre dots without changing the surrounding bowls.",
+    },
     "ss19": {
         "name": "Broken equals ligatures",
         "sample": "!= !== == ===",
@@ -418,7 +424,7 @@ def generate(font_path: Path) -> dict[str, Any]:
 
     return {
         "family": name_value(font, 1, "CLN Mono"),
-        "version": name_value(font, 5, "Version 1.304"),
+        "version": name_value(font, 5, "Version 1.305"),
         "postscriptName": name_value(font, 6, "CLNMono-Regular"),
         "designer": name_value(font, 9),
         "license": name_value(font, 13),

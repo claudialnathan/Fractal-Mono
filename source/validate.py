@@ -17,7 +17,7 @@ from zipfile import ZipFile
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 
-from cln_geometry import _reference_glyph
+from cln_geometry import _master_outline
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -25,10 +25,10 @@ DESKTOP = PROJECT / "fonts" / "desktop"
 WEB = PROJECT / "fonts" / "web"
 VARIABLE = DESKTOP / "CLNMono-Variable.ttf"
 BUILD_REPORT = PROJECT / "build-report.json"
-PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.303.zip"
+PREVIOUS_RELEASE = PROJECT / "archive" / "CLNMono-v1.304.zip"
 PREVIOUS_FONT = "fonts/desktop/CLNMono-Variable.ttf"
 
-VERSION = "1.304"
+VERSION = "1.305"
 CAP_HEIGHT = 680
 X_HEIGHT = 528
 TEXT_X_HEIGHT = 540
@@ -52,14 +52,14 @@ CUSTOM_TOPOLOGY = {
     "J": (1, 28),
     "j": (2, 20),
     "K": (1, 15),
-    "R": (2, 33),
+    "R": (2, 36),
     "M": (1, 25),
     "W": (1, 31),
     "S": (1, 61),
     "f": (1, 20),
     "l": (1, 10),
     "t": (1, 20),
-    "r": (1, 20),
+    "r": (1, 22),
     "exclam": (2, 10),
     "question": (2, 33),
     "asciicircum": (1, 8),
@@ -133,7 +133,7 @@ def assert_reference_drawings(variable: TTFont) -> None:
         optimize=True,
     )
     for glyph_name in ("R", "r", "K"):
-        expected = _reference_glyph(glyph_name)
+        expected = _master_outline(glyph_name, 450)
         actual = book["glyf"][glyph_name]
         assert list(actual.endPtsOfContours) == list(expected.endPtsOfContours), (
             glyph_name,
@@ -391,7 +391,7 @@ def depends_on(
 
 
 def assert_default_preservation(variable: TTFont) -> int:
-    assert PREVIOUS_RELEASE.exists(), "Missing v1.303 regression archive"
+    assert PREVIOUS_RELEASE.exists(), "Missing v1.304 regression archive"
     with ZipFile(PREVIOUS_RELEASE) as archive:
         previous = TTFont(BytesIO(archive.read(PREVIOUS_FONT)))
 
@@ -702,6 +702,20 @@ def main() -> None:
     assert dlig_features[0].LookupCount == 152
     assert len(calt_features) == 1
     assert calt_features[0].LookupCount == 2
+    ss03_records = [
+        record
+        for record in feature_records
+        if record.FeatureTag == "ss03"
+    ]
+    assert len(ss03_records) == 1
+    assert ss03_records[0].Feature.LookupCount == 1
+    params = ss03_records[0].Feature.FeatureParams
+    assert params is not None
+    assert any(
+        record.nameID == params.UINameID
+        and record.toUnicode() == "Dotless counters"
+        for record in variable["name"].names
+    )
 
     cmap = variable.getBestCmap()
     axis_grid = [
@@ -878,14 +892,12 @@ def main() -> None:
             <= upper_bridge_limits[1] + 4
             for index in (4, 5)
         ), (weight, opsz, "K upper bridge control escape")
-        lower_bridge_limits = sorted(
-            (k_coordinates[6][0], k_coordinates[9][0])
-        )
         assert (
-            lower_bridge_limits[0]
+            k_coordinates[13][0]
             <= k_coordinates[12][0]
-            <= lower_bridge_limits[1]
-        ), (weight, opsz, "K lower bridge control escape")
+            < k_coordinates[9][0]
+            and k_coordinates[12][1] < k_coordinates[9][1]
+        ), (weight, opsz, "K lower bridge reversal")
         k_stem = round(k_coordinates[2][0] - k_coordinates[1][0])
         assert abs(k_stem - h_vertical_stroke) <= 6, (
             weight,
@@ -913,7 +925,7 @@ def main() -> None:
 
         r_cap_coordinates = instance["glyf"]["R"].coordinates
         r_cap_stem = round(
-            r_cap_coordinates[23][0] - r_cap_coordinates[0][0]
+            r_cap_coordinates[24][0] - r_cap_coordinates[0][0]
         )
         assert abs(r_cap_stem - h_vertical_stroke) <= 4, (
             weight,
@@ -925,7 +937,7 @@ def main() -> None:
         r_cap_counter = contour_bounds(instance, "R", 1)
         counter_width = r_cap_counter[2] - r_cap_counter[0]
         counter_height = r_cap_counter[3] - r_cap_counter[1]
-        assert counter_width >= 235 and counter_height >= 195, (
+        assert counter_width >= 225 and counter_height >= 135, (
             weight,
             opsz,
             "R counter closure",
@@ -948,7 +960,7 @@ def main() -> None:
             opsz,
             "r left stem edge",
         )
-        assert abs(r_coordinates[18][0] - r_coordinates[19][0]) <= 3, (
+        assert abs(r_coordinates[20][0] - r_coordinates[21][0]) <= 1, (
             weight,
             opsz,
             "r right stem edge",
@@ -979,7 +991,7 @@ def main() -> None:
             "r aperture",
             aperture,
         )
-        r_stem = round(r_coordinates[19][0] - r_coordinates[0][0])
+        r_stem = round(r_coordinates[21][0] - r_coordinates[0][0])
         assert abs(r_stem - h_vertical_stroke) <= 9, (
             weight,
             opsz,
@@ -987,6 +999,55 @@ def main() -> None:
             r_stem,
             h_vertical_stroke,
         )
+        assert round(r_coordinates[1][1]) == round(r_coordinates[2][1]), (
+            weight,
+            opsz,
+            "r stem cap",
+        )
+
+        assert round(r_cap_coordinates[25][1]) == round(
+            r_cap_coordinates[26][1]
+        ), (weight, opsz, "R counter lower flat")
+        assert round(r_cap_coordinates[34][1]) == round(
+            r_cap_coordinates[35][1]
+        ), (weight, opsz, "R counter upper flat")
+
+        for source_name, alternate_name in (
+            ("O", "O.dotless"),
+            ("o", "o.dotless"),
+            ("zero", "zero.dotless"),
+        ):
+            source = instance["glyf"][source_name]
+            alternate = instance["glyf"][alternate_name]
+            assert source.numberOfContours == 3
+            assert alternate.numberOfContours == 2
+            assert instance["hmtx"].metrics[source_name] == instance[
+                "hmtx"
+            ].metrics[alternate_name]
+            for contour_index in (0, 1):
+                source_contour = contour_signature(
+                    instance,
+                    source_name,
+                    contour_index,
+                )
+                alternate_contour = contour_signature(
+                    instance,
+                    alternate_name,
+                    contour_index,
+                )
+                assert len(source_contour) == len(alternate_contour)
+                assert all(
+                    math.dist(source_point, alternate_point) <= 1.1
+                    for source_point, alternate_point in zip(
+                        source_contour,
+                        alternate_contour,
+                    )
+                ), (
+                    weight,
+                    opsz,
+                    source_name,
+                    "dotless bowl drift",
+                )
 
         semicolon_tail = contour_signature(instance, "semicolon", 1)
         assert len({x for x, _ in semicolon_tail}) > 2, (
@@ -1157,6 +1218,14 @@ def main() -> None:
                 result,
             )
 
+    default_counters = shape("Oo0")
+    dotless_counters = shape("Oo0", "ss03=1")
+    assert "[O=0+579|o=1+579|zero=2+579]" == default_counters
+    assert (
+        "[O.dotless=0+579|o.dotless=1+579|zero.dotless=2+579]"
+        == dotless_counters
+    )
+
     preserved_count = assert_default_preservation(variable)
     assert_round_dotted_bowls_preserved(variable)
 
@@ -1177,14 +1246,14 @@ def main() -> None:
     print("PASS: lowercase f/l raised terminals preserve their local stroke through opsz")
     print("PASS: every square dot uses a clean native four-point contour")
     print("PASS: custom outlines contain no duplicate, closing, or zero-area contours")
-    print("PASS: O/o/zero preserve their archived round bowls and replace only the final dot contour")
+    print("PASS: O/o/zero stay dotted by default and ss03 exposes bowl-identical dotless alternates")
     print("PASS: i/j marks, diaeresis, dot-below, punctuation, and ellipsis use square dots")
     print("PASS: semicolon keeps its tapered tail instead of squaring it")
     print(f"PASS: {len(ligature_names)} programming glyphs retain one-cell advances")
     print("PASS: 150 programming ligatures remain optional under dlig; 3 stay literal")
     print("PASS: four-character repeats remain literal instead of partially ligating")
     print(f"PASS: Regular H stem {h_stem} with optically lighter {h_horizontal_stem}-unit crossbar")
-    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.303 default design")
+    print(f"PASS: {preserved_count} non-redrawn encoded glyphs match the archived 1.304 default design")
 
 
 if __name__ == "__main__":

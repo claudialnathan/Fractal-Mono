@@ -13,12 +13,13 @@ CLN Mono is a crisp monospaced typeface for code, interfaces, technical writing,
 
 The Text optical master raises the x-height, strengthens small details, and opens dense joins. The Display master lowers the x-height and tightens the drawing for larger settings. Cap height and advance width remain fixed throughout.
 
-- 1,743 glyphs and 1,363 encoded characters
+- 1,746 glyphs and 1,363 encoded characters
 - Latin, Greek, Cyrillic, symbols, and code-oriented alternates
 - Nine named weights from Thin to ExtraBold
 - 150 optional programming-ligature drawings under `dlig`
 - Character variants, fractions, superiors, inferiors, slashed zero, and tabular numerals
 - Square dots across `i`, `j`, punctuation, combining marks, and dotted counters
+- Optional dotless `O/o/0` under stylistic set `ss03`
 - Upright roman; no synthetic italic
 
 The signature set includes the hooked `J/j`, bridged `K`, compact `R/r`, open `M`, pinched `W`, compact `S`, and angular `! ? ^ ; : *`. Thin and ExtraBold use dedicated compatible masters that preserve counters, apertures, and stroke balance.
@@ -67,6 +68,14 @@ Use `font-weight` for weight and let `font-optical-sizing: auto` follow the rend
 
 Programming ligatures are literal by default. Enable them explicitly with `font-variant-ligatures: discretionary-ligatures`.
 
+The square-dotted `O`, `o`, and `0` are defaults. Remove only those centre dots with:
+
+```css
+.dotless-counters {
+  font-feature-settings: "ss03" 1;
+}
+```
+
 ## Build
 
 Python 3.11+, FontTools, NumPy, Brotli, Pillow, HarfBuzz, and Node.js are required.
@@ -83,7 +92,7 @@ The build is self-contained. Its OFL upstream binary and compatible signature-ma
 
 ## Scope
 
-CLN Mono 1.304 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+CLN Mono 1.305 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
 
 ## Licence
 

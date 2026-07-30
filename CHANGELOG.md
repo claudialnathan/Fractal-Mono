@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.305
+
+- Replaced offset-derived `R/r/K` endpoints with explicit compatible Thin, Book, and ExtraBold cubic masters.
+- Converted corresponding curves together so node order, flats, verticals, tangents, and joins remain stable throughout the weight axis.
+- Added `ss03` dotless alternates for `O/o/0`; the square-dotted forms remain the defaults.
+- Added node-correspondence proofs and preserved every unrelated encoded glyph against 1.304.
+
 ## 1.304
 
 - Redrew uppercase `R`, lowercase `r`, and uppercase `K` from compatible Book-weight masters.

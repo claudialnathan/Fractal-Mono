@@ -26,6 +26,7 @@ specimens:
 	$(PYTHON) source/specimens.py
 	$(PYTHON) source/outline_proof.py
 	$(PYTHON) source/signature_proof.py
+	$(PYTHON) source/interpolation_diagnostics.py
 	$(PYTHON) source/desktop_specimen.py
 	$(NPM) run test:browser
 	$(NPM) run test:factsheet

@@ -51,11 +51,19 @@ The outlines are deliberately unhinted. The `gasp` table requests grayscale and 
 
 ## Release history
 
+### 1.305
+
+- Replaces offset-derived `R/r/K` endpoints with compatible Thin, Book, and ExtraBold cubic drawings.
+- Converts corresponding cubic curves together to retain semantic node order and curve tangents.
+- Adds a node-correspondence proof across the sensitive weight extremes.
+- Adds optional dotless `O/o/0` under `ss03` while keeping the dotted defaults.
+- Protects all unrelated glyphs against the preceding release.
+
 ### 1.304
 
 - Redraws `R/r/K` from exact Book-weight constructions.
-- Fits Thin and ExtraBold with counter-aware contour expansion.
-- Adds a dedicated `R/r/K` proof across every named weight and optical master.
+- Fits the signature forms across the weight axis while protecting counters and apertures.
+- Adds a dedicated `R/r/K` filled and outline proof across every named weight and optical master.
 - Protects all unrelated glyphs against the preceding release.
 
 ### 1.303

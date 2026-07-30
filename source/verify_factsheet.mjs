@@ -117,9 +117,9 @@ const inventory = await desktop.evaluate(() => ({
 }));
 
 assert.equal(inventory.ready, "true");
-assert.equal(inventory.featureCards, 38);
+assert.equal(inventory.featureCards, 39);
 assert.equal(inventory.glyphCards, 1363);
-assert.equal(inventory.unencodedGlyphs, 380);
+assert.equal(inventory.unencodedGlyphs, 383);
 assert.equal(inventory.languageRows, 363);
 assert.equal(inventory.releaseFiles, 30);
 assert.equal(inventory.fontTables, 19);
@@ -319,7 +319,7 @@ await printable.pdf({
   displayHeaderFooter: true,
   headerTemplate: "<span></span>",
   footerTemplate:
-    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>CLN Mono 1.304</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>CLN Mono 1.305</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
 });
 
 await Promise.all([desktop.close(), mobile.close(), printable.close()]);

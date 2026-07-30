@@ -8,6 +8,7 @@ import json
 import math
 import shutil
 import sys
+from copy import deepcopy
 from functools import partial
 from pathlib import Path
 
@@ -38,7 +39,7 @@ from cln_geometry import (
 
 
 FAMILY = "CLN Mono"
-VERSION = "1.304"
+VERSION = "1.305"
 UPM = 1000
 ADVANCE = 579
 
@@ -184,6 +185,11 @@ ALTERNATE_SWAPS = {"l": "l.cv01", "lslash": "lslash.cv01"}
 # non-programming contextual alternates stay in `calt`.
 EXPECTED_DISCRETIONARY_LIGATURE_LOOKUP_COUNT = 152
 ALWAYS_LITERAL_LIGATURE_SEQUENCES = {"/\\", "\\/", "|||"}
+DOTLESS_COUNTER_ALTERNATES = {
+    "O": "O.dotless",
+    "o": "o.dotless",
+    "zero": "zero.dotless",
+}
 
 PROJECT = Path(__file__).resolve().parents[1]
 BUILD = PROJECT / "build"
@@ -496,6 +502,124 @@ def move_programming_ligatures_to_dlig(font: TTFont) -> list[str]:
     gsub.FeatureList.FeatureRecord = [record for _, record in indexed_records]
     gsub.FeatureList.FeatureCount = len(indexed_records)
     return sorted(sequences_by_glyph.values(), key=lambda value: (len(value), value))
+
+
+def install_dotless_counter_glyphs(font: TTFont) -> None:
+    """Copy O/o/zero without their final square-dot contour.
+
+    The dotted drawings remain the encoded defaults. These copies are rebuilt
+    in every optical master so they share the exact same bowls, fitting, and
+    variation model as the defaults.
+    """
+    glyphs = font["glyf"]
+    glyph_order = font.getGlyphOrder()
+    for source_name, target_name in DOTLESS_COUNTER_ALTERNATES.items():
+        source = glyphs[source_name]
+        if source.isComposite() or source.numberOfContours != 3:
+            raise ValueError(
+                f"{source_name} must have two bowl contours plus one dot"
+            )
+        contour_start = source.endPtsOfContours[-2] + 1
+        target = deepcopy(source)
+        target.coordinates = type(source.coordinates)(
+            source.coordinates[:contour_start]
+        )
+        target.flags = bytearray(source.flags[:contour_start])
+        target.endPtsOfContours = list(source.endPtsOfContours[:-1])
+        target.numberOfContours = 2
+        target.recalcBounds(glyphs)
+        glyphs[target_name] = target
+        font["hmtx"].metrics[target_name] = (ADVANCE, target.xMin)
+
+        if target_name not in glyph_order:
+            glyph_order.append(target_name)
+
+        if "gvar" in font:
+            copied_variations = deepcopy(
+                font["gvar"].variations.get(source_name, [])
+            )
+            source_coordinate_count = len(source.coordinates)
+            for variation in copied_variations:
+                if len(variation.coordinates) != source_coordinate_count + 4:
+                    raise ValueError(
+                        f"Unexpected gvar coordinate count for {source_name}"
+                    )
+                variation.coordinates = (
+                    variation.coordinates[:contour_start]
+                    + variation.coordinates[-4:]
+                )
+            font["gvar"].variations[target_name] = copied_variations
+
+    font.setGlyphOrder(glyph_order)
+    font["maxp"].numGlyphs = len(glyph_order)
+
+
+def add_dotless_counter_feature(font: TTFont) -> None:
+    """Expose dotless O/o/0 through named stylistic set 03."""
+    gsub = font["GSUB"].table
+    feature_records = list(gsub.FeatureList.FeatureRecord)
+    if any(record.FeatureTag == "ss03" for record in feature_records):
+        raise ValueError("ss03 is already present")
+
+    lookup = otTables.Lookup()
+    lookup.LookupType = 1
+    lookup.LookupFlag = 0
+    lookup.SubTable = []
+    lookup.SubTableCount = 1
+    subtable = otTables.SingleSubst()
+    subtable.mapping = dict(DOTLESS_COUNTER_ALTERNATES)
+    lookup.SubTable.append(subtable)
+    lookup.MarkFilteringSet = None
+    lookup_index = len(gsub.LookupList.Lookup)
+    gsub.LookupList.Lookup.append(lookup)
+    gsub.LookupList.LookupCount = len(gsub.LookupList.Lookup)
+
+    params = otTables.FeatureParamsStylisticSet()
+    params.Version = 0
+    params.UINameID = add_name(font, "Dotless counters")
+    record = otTables.FeatureRecord()
+    record.FeatureTag = "ss03"
+    record.Feature = otTables.Feature()
+    record.Feature.FeatureParams = params
+    record.Feature.LookupListIndex = [lookup_index]
+    record.Feature.LookupCount = 1
+
+    indexed_records = list(enumerate(feature_records))
+    indexed_records.append((None, record))
+    indexed_records.sort(key=lambda item: item[1].FeatureTag)
+    old_to_new = {
+        old_index: new_index
+        for new_index, (old_index, _) in enumerate(indexed_records)
+        if old_index is not None
+    }
+    ss03_index = next(
+        new_index
+        for new_index, (old_index, _) in enumerate(indexed_records)
+        if old_index is None
+    )
+    for script_record in gsub.ScriptList.ScriptRecord:
+        lang_systems = []
+        if script_record.Script.DefaultLangSys is not None:
+            lang_systems.append(script_record.Script.DefaultLangSys)
+        lang_systems.extend(
+            language.LangSys
+            for language in script_record.Script.LangSysRecord
+        )
+        for lang_system in lang_systems:
+            lang_system.FeatureIndex = sorted(
+                {
+                    *(old_to_new[index] for index in lang_system.FeatureIndex),
+                    ss03_index,
+                }
+            )
+            lang_system.FeatureCount = len(lang_system.FeatureIndex)
+            if lang_system.ReqFeatureIndex != 0xFFFF:
+                lang_system.ReqFeatureIndex = old_to_new[
+                    lang_system.ReqFeatureIndex
+                ]
+
+    gsub.FeatureList.FeatureRecord = [record for _, record in indexed_records]
+    gsub.FeatureList.FeatureCount = len(indexed_records)
 
 
 def x_transform(
@@ -1431,6 +1555,8 @@ def transform_weight_variable() -> TTFont:
         scale=LOWERCASE_O_DOT_SCALE,
         target_center_y=(lowercase_o.yMin + lowercase_o.yMax) / 2,
     )
+    install_dotless_counter_glyphs(font)
+    add_dotless_counter_feature(font)
     install_custom_variable_glyph(font, "t", build_lowercase_t, STEMS_LOWER)
     install_custom_variable_glyph(font, "k", build_lowercase_k, STEMS_LOWER)
     install_custom_variable_glyph(font, "r", build_lowercase_r, STEMS_LOWER)
@@ -1535,6 +1661,7 @@ def make_optical_master(
     )
     apply_optical_geometry(font, opsz, excluded=excluded)
     install_preserved_master_glyphs(font, user_weight, opsz)
+    install_dotless_counter_glyphs(font)
     install_reference_glyphs(font, user_weight, opsz)
     install_square_marks(font, user_weight, opsz)
     install_square_ellipsis(font, user_weight, opsz)
@@ -1688,19 +1815,21 @@ def main() -> None:
         "sourceRegularWeight": SOURCE_REGULAR_WEIGHT,
         "regularStemTarget": STEMS_LOWER[1],
         "curveRepair": {
-            "method": "restore established quadratic controls",
-            "removed": "v1.240 contour-local off-curve tension",
-            "scope": "all established letters and numerals",
+            "method": "explicit compatible cubic endpoint masters",
+            "removed": "mechanical endpoint outline offsets for R/r/K",
+            "scope": "R/r/K at weights 100, 450, and 800",
             "preserves": [
                 "metrics",
                 "optical fitting",
                 "zone remap",
-                "custom CLN letterforms",
+                "canonical Book drawings",
                 "variable interpolation",
             ],
         },
         "dottedLetters": {
-            "default": ["O", "o"],
+            "default": ["O", "o", "zero"],
+            "dotlessAlternates": list(DOTLESS_COUNTER_ALTERNATES.values()),
+            "dotlessFeature": "ss03",
             "sourceContour": "zero centre dot",
             "lowercaseScale": LOWERCASE_O_DOT_SCALE,
         },
