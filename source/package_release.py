@@ -15,7 +15,7 @@ FILES = (
     "README.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md",
-    "OFL.txt",
+    "LICENSE.txt",
     "fractal-mono.css",
     "specimen.html",
     "specimen.css",
@@ -37,6 +37,15 @@ FILES = (
 DIRECTORIES = ("fonts/desktop", "fonts/web")
 
 
+def assert_specimen_links_this_release() -> None:
+    """The specimen's download must point at the archive being written."""
+    specimen = (PROJECT / "specimen.html").read_text()
+    linked = f"./archive/FractalMono-v{VERSION}.zip"
+    assert linked in specimen, (
+        f"specimen.html does not link {linked}; the download would 404"
+    )
+
+
 def release_files() -> list[Path]:
     paths = [PROJECT / name for name in FILES]
     for directory in DIRECTORIES:
@@ -48,6 +57,7 @@ def release_files() -> list[Path]:
 
 
 def main() -> None:
+    assert_specimen_links_this_release()
     OUTPUT.parent.mkdir(exist_ok=True)
     with ZipFile(OUTPUT, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
         for path in release_files():

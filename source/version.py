@@ -8,10 +8,10 @@ download for a release that was four versions old and did not exist.
 `source/validate.py` asserts that no stale version string survives anywhere.
 """
 
-VERSION = "1.421"
+VERSION = "1.000"
 
 # package.json wants three components.
-PACKAGE_VERSION = f"{VERSION}.0"
+PACKAGE_VERSION = "1.0.0"
 
 # The release archive the specimen links to.
 ARCHIVE_NAME = f"FractalMono-v{VERSION}.zip"

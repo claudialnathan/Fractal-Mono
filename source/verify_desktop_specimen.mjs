@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+// Read from source/version.py so a release cannot leave this behind.
+const VERSION = readFileSync(new URL("version.py", import.meta.url), "utf8")
+  .match(/^VERSION = "([^"]+)"/m)[1];
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
@@ -159,7 +163,7 @@ console.log(JSON.stringify(result, null, 2));
 
 const failures = [
   !fontLoaded && "embedded variable font did not load",
-  displayedVersion?.trim() !== "Version 1.305" && `unexpected specimen version: ${displayedVersion}`,
+  displayedVersion?.trim() !== `Version ${VERSION}` && `unexpected specimen version: ${displayedVersion}`,
   glyphCards !== 1363 && `expected 1363 glyph cards, received ${glyphCards}`,
   initialVisibleCount?.trim() !== "1,363 / 1,363" && "initial character count is wrong",
   Object.entries(accessibleStructure).some(([, count]) => count !== 1 && count !== 7) &&

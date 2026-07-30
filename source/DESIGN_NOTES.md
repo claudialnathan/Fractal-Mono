@@ -51,53 +51,7 @@ The outlines are deliberately unhinted. The `gasp` table requests grayscale and 
 
 ## Release history
 
-### 1.305
-
-- Replaces offset-derived `R/r/K` endpoints with compatible Thin, Book, and ExtraBold cubic drawings.
-- Converts corresponding cubic curves together to retain semantic node order and curve tangents.
-- Adds a node-correspondence proof across the sensitive weight extremes.
-- Adds optional dotless `O/o/0` under `ss03` while keeping the dotted defaults.
-- Protects all unrelated glyphs against the preceding release.
-
-### 1.304
-
-- Redraws `R/r/K` from exact Book-weight constructions.
-- Fits the signature forms across the weight axis while protecting counters and apertures.
-- Adds a dedicated `R/r/K` filled and outline proof across every named weight and optical master.
-- Protects all unrelated glyphs against the preceding release.
-
-### 1.303
-
-- Rebuilds signature masters with compatible curve-handle movement.
-- Keeps short terminals and bridged joins uniform at every named weight.
-- Stabilizes `f/l/t/r` details and the tapered semicolon construction.
-- Preserves established `O/o/0` bowls while replacing only their dot contours.
-- Extends filled and outline proofs across the complete named design space.
-
-### 1.300
-
-- Adds a true `opsz` axis with Text, Auto, and Display masters.
-- Redraws `J/j/K/M/W/S` and `! ? ^ ; : *`.
-- Rebuilds dot punctuation and combining marks as clean square contours.
-- Corrects Thin `t` and applies dedicated heavy-master fitting.
-- Makes the build self-contained and adds release-grade contour and axis checks.
-
-### 1.252
-
-- Redrew uppercase `K` with a stem bridge and outward junction.
-
-### 1.251
-
-- Consolidated family metadata, documentation, factsheets, and specimens.
-
-### 1.250
-
-- Restored clean quadratic controls.
-- Added dotted `O/o` defaults.
-
-### 1.240
-
-- Raised lowercase ascenders from `680` to `728`.
+See [CHANGELOG.md](../CHANGELOG.md).
 
 ## Invariants
 

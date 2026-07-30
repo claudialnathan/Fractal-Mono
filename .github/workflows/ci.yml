@@ -35,3 +35,9 @@ jobs:
         run: make build
       - name: Validate
         run: make test
+      - name: Reproducible
+        run: |
+          shasum -a256 fonts/desktop/*.ttf fonts/web/* > /tmp/first
+          make build
+          shasum -a256 fonts/desktop/*.ttf fonts/web/* > /tmp/second
+          diff /tmp/first /tmp/second && echo "identical bytes from an identical source"

@@ -7,7 +7,7 @@
     .caption { font-size: 17px; fill: #66665f; }
     .row-label { font-size: 16px; fill: #66665f; }
   </style>
-  <text x="36" y="54" class="title">Fractal Mono 1.421 — complete design-space outline proof</text>
+  <text x="36" y="54" class="title">Fractal Mono 1.000 — complete design-space outline proof</text>
   <path d="M900 92V3270" stroke="#d3d2cc"/>
   <path d="M36 1135H1764M36 2195H1764" stroke="#d3d2cc"/>
   <text x="36" y="110" class="section-title">Text · opsz 9</text><text x="100" y="154" class="caption">Filled</text><text x="960" y="154" class="caption">Stroke / no fill</text><text x="36" y="230" class="row-label">100</text><path d="M290.92602739726027 -47Q245.65205479452055 -47 204.4054794520548 -34.5Q163.15890410958903 -22 134 -1Q106 23 93.0 61.5Q80 100 76 144H138.3674418604651Q141.3674418604651 104 149.38372093023256 74.5Q157.4 45 178.48372093023255 27Q198.56744186046512 13 230.2093023255814 10.0Q261.8511627906977 7 295 7Q327 6 356.0 13.0Q385 20 404.5 37Q424 56 430.5 84.5Q437 113 439 146L436 680H486L487 150Q486 106 476.5 68.0Q467 30 441.84109589041094 5Q414.68219178082194 -19 374.93835616438355 -33.0Q335.1945205479452 -47 290.92602739726027 -47Z" transform="translate(100.000 244.000) scale(0.0570 -0.0570)" fill="#111111"/>

@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+// Read from source/version.py so a release cannot leave this behind.
+const VERSION = readFileSync(new URL("version.py", import.meta.url), "utf8")
+  .match(/^VERSION = "([^"]+)"/m)[1];
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
@@ -82,7 +86,7 @@ await signature.screenshot({ path: `${specimens}/FractalMono-RrK-proof.png` });
 const failures = [
   results.codeLigatures !== "none" &&
     `code page does not disable ligatures: ${results.codeLigatures}`,
-  results.codeVersion !== "Fractal Mono 1.305 · ligatures off" &&
+  results.codeVersion !== `Fractal Mono ${VERSION} · ligatures off` &&
     `unexpected code-page version: ${results.codeVersion}`,
   results.ligatureToggleDefault && "ligature feature is enabled by default in the specimen",
   results.ligatureDefault !== "none" &&
@@ -93,7 +97,7 @@ const failures = [
   results.auditToggleDefault && "audit dlig preview is enabled by default",
   results.mainError && `main specimen error: ${results.mainError}`,
   results.mainOverflow > 1 && `main specimen overflows by ${results.mainOverflow}px`,
-  results.mainVersion !== "Version 1.305" &&
+  results.mainVersion !== `Version ${VERSION}` &&
     `unexpected main specimen version: ${results.mainVersion}`,
   results.opticalDefault !== "14" &&
     `unexpected optical-size default: ${results.opticalDefault}`,

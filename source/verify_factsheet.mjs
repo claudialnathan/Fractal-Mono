@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+// Read from source/version.py so a release cannot leave this behind.
+const VERSION = readFileSync(new URL("version.py", import.meta.url), "utf8")
+  .match(/^VERSION = "([^"]+)"/m)[1];
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -319,7 +323,7 @@ await printable.pdf({
   displayHeaderFooter: true,
   headerTemplate: "<span></span>",
   footerTemplate:
-    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>Fractal Mono 1.305</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
+    '<div style="width:100%;padding:0 10mm;color:#777;font:8px monospace;display:flex;justify-content:space-between"><span>Fractal Mono ${VERSION}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>',
 });
 
 await Promise.all([desktop.close(), mobile.close(), printable.close()]);

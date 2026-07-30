@@ -1,6 +1,10 @@
 # Fractal Mono
 
-Fractal Mono is a crisp monospaced typeface for code, interfaces, technical writing, and graphic work. It has a slightly brutalist construction, open counters, square punctuation, and an invariant `579`-unit cell that keeps text sitting cleanly on the line.
+A monospaced typeface for code, interfaces, and technical writing. Gently
+brutalist construction, open counters, square punctuation, and a fixed `579`-unit
+cell that keeps text sitting cleanly on the line.
+
+Designed by Claudia Nathan. Free to use, under the SIL Open Font License 1.1.
 
 ![Fractal Mono specimen](specimens/FractalMono-specimen.png)
 
@@ -11,35 +15,36 @@ Fractal Mono is a crisp monospaced typeface for code, interfaces, technical writ
 | Weight (`wght`) | 100–800 | 400 |
 | Optical size (`opsz`) | 9–72 | 14 |
 
-The Text optical master raises the x-height, strengthens small details, and opens dense joins. The Display master lowers the x-height and tightens the drawing for larger settings. Cap height and advance width remain fixed throughout.
+Nine named weights: Thin, ExtraLight, Light, Regular, Book, Medium, SemiBold,
+Bold, ExtraBold. Every named step is the same proportional change, so the ramp
+reads evenly from one end to the other.
 
-- 1,746 glyphs and 1,363 encoded characters
-- Latin, Greek, Cyrillic, symbols, and code-oriented alternates
-- Nine named weights from Thin to ExtraBold
-- 150 optional programming-ligature drawings under `dlig`
-- Character variants, fractions, superiors, inferiors, slashed zero, and tabular numerals
-- Square dots across `i`, `j`, punctuation, combining marks, and dotted counters
-- Optional dotless `O/o/0` under stylistic set `ss03`
-- Upright roman; no synthetic italic
+Optical size is a second design axis, not display scaling. The Text end raises the
+x-height, enlarges the dots, and opens dense joins for small sizes; the Display end
+lowers the x-height and tightens the drawing. Cap height, advance width, and the
+vertical metrics hold constant across both axes.
 
-The signature set includes the hooked `J/j`, bridged `K`, compact `R/r`, open `M`, pinched `W`, compact `S`, and angular `! ? ^ ; : *`. Thin and ExtraBold use dedicated compatible masters that preserve counters, apertures, and stroke balance.
+- 1,746 glyphs, 1,363 encoded characters
+- Latin, Greek, Cyrillic, symbols, box drawing, and Powerline
+- 150 programming ligatures, drawn but off by default
+- Character variants, dotless counters, tabular figures, fractions, superiors and
+  inferiors
 
-## Files
-
-- `fonts/desktop/FractalMono-Variable.ttf` — variable desktop font
-- `fonts/desktop/FractalMono-*.ttf` — nine static desktop weights at optical size 14
-- `fonts/web/FractalMono-Variable.woff2` and `.woff` — variable web fonts
-- `fonts/web/FractalMono-*.woff2` and `.woff` — static web fonts
-- `fractal-mono.css` — web setup with automatic optical sizing
-- `specimen.html` — interactive tester, glyph set, OpenType features, and release data
-- `ligature-audit.html` — every programming sequence, shaped and literal
-- `build-report.json` — release metrics, file sizes, and SHA-256 hashes
+The signature set is the hooked `J j`, bridged `K`, compact `R r`, open `M`,
+pinched `W`, compact `S`, and the angular `! ? ^ ; : *`. Dots on `i`, `j`,
+punctuation and combining marks are exact squares; the counter dots in `O`, `o`
+and `0` are circles. Diagonals are held to the family's stroke system at every
+weight rather than left to interpolation.
 
 ## Install
 
-On macOS, install `fonts/desktop/FractalMono-Variable.ttf` in Font Book. Install either the variable font or the static family, not both.
+**Desktop.** Install `fonts/desktop/FractalMono-Variable.ttf` for the whole axis
+range, or the nine static faces in the same folder. Both can be installed
+together. Some design tools clamp variable weights, so if a heavier weight renders
+too light, use the statics there.
 
-For the web:
+**Web.** Copy `fonts/web/` and `fractal-mono.css` into your project, or set it up
+directly:
 
 ```css
 @font-face {
@@ -50,14 +55,16 @@ For the web:
   font-display: swap;
 }
 
-code {
-  font-family: "Fractal Mono", monospace;
+code, pre, kbd {
+  font-family: "Fractal Mono", ui-monospace, monospace;
   font-optical-sizing: auto;
   font-variant-ligatures: none;
 }
 ```
 
-Use `font-weight` for weight and let `font-optical-sizing: auto` follow the rendered size. To lock a specific optical drawing:
+One request covers the whole range. Use `font-weight` for weight and let
+`font-optical-sizing: auto` follow the rendered size. To lock a specific optical
+drawing:
 
 ```css
 .display {
@@ -66,36 +73,93 @@ Use `font-weight` for weight and let `font-optical-sizing: auto` follow the rend
 }
 ```
 
-Programming ligatures are literal by default. Enable them explicitly with `font-variant-ligatures: discretionary-ligatures`.
+**Editors and terminals.** Set the family to `Fractal Mono`. Terminals rasterise
+each glyph into a fixed cell without hinting or subpixel positioning, so below
+about 13px the strokes fall under one device pixel and soften. A slightly larger
+size, or weight 500, holds up better there than the same settings would in an
+editor.
 
-The square-dotted `O`, `o`, and `0` are defaults. Remove only those centre dots with:
+## Features
+
+Programming ligatures are drawn but **off by default**, so source stays literal
+and cursoring stays predictable — every sequence keeps one advance per character.
+Turn them on explicitly:
 
 ```css
-.dotless-counters {
-  font-feature-settings: "ss03" 1;
-}
+code { font-variant-ligatures: discretionary-ligatures; }
 ```
 
-## Build
+| Feature | What it does |
+| --- | --- |
+| `dlig` | 150 programming ligatures, off by default |
+| `ss03` | Dotless `O`, `o`, `0` — the dotted forms are the default |
+| `cv01`–`cv20`, `cv99` | Character variants |
+| `tnum`, `frac`, `sups`, `subs`, `zero` | Figures and fractions |
 
-Python 3.11+, FontTools, NumPy, Brotli, Pillow, HarfBuzz, and Node.js are required.
+Longer repeated sequences are guarded, so a four-character run of the same
+character stays literal even with `dlig` on.
+
+## Files
+
+- `fonts/desktop/` — variable font plus nine static weights at optical size 14
+- `fonts/web/` — the same as `woff2` and `woff`
+- `fractal-mono.css` — web setup with automatic optical sizing
+- `specimen.html` — interactive tester, glyph set, features, release data
+- `ligature-audit.html` — every programming sequence, shaped and literal
+- `build-report.json` — release metrics, file sizes, SHA-256 hashes
+
+## Build from source
+
+Python 3.9+ and Node (for the browser-rendered proofs).
 
 ```sh
-make setup
-make build
-make test
-make specimens
-make release
+make setup      # install Python and Node dependencies
+make build      # build every desktop and web artefact
+make validate   # run both validation suites
+make specimens  # regenerate proofs and specimen images
+make release    # build, test, and package an archive
 ```
 
-The build is self-contained. Its OFL upstream binary and compatible signature-master source are stored in the repository with recorded checksums. `make test` checks all 30 font files, both variation axes, shaping, fixed cells, interpolation, contour integrity, square dots, stroke balance, extreme-weight bounds, metadata, and release hashes.
+Builds are byte-reproducible — the same source produces the same bytes, so a
+release hash identifies the outlines rather than the moment of the build.
 
-## Scope
+The upright is transformed from JetBrains Mono 2.304, which supplied the initial
+character set and OpenType scaffolding. The design, metrics, stroke system, and
+drawings are original. `source/DESIGN_NOTES.md` covers the architecture;
+`source/stroke_system.py` and `source/key_symbols.py` hold the geometry the
+family's own rules are enforced through.
 
-Fractal Mono 1.421 is an upright family with weight and optical-size variation. It does not include a true italic, width axis, purpose-built Windows hinting, or editorial verification for every detected language profile.
+Two suites gate a release. `source/validate.py` checks metadata, axes, metrics,
+advances, features, and shaping across the axis grid. `source/validate_geometry.py`
+samples 29 weights against 3 optical sizes for self-intersection,
+diagonal-to-stem proportion, ink monotonicity, cell containment, dot squareness,
+and counter-dot centring.
+
+## Not in this release
+
+No italic or oblique, no width axis, and no purpose-built Windows hinting — the
+outlines are unhinted and request grayscale smoothing. Applications will
+synthesise an oblique from the upright if asked for one.
 
 ## Licence
 
-Copyright 2026 Claudia Nathan.
+Licensed under the [SIL Open Font License 1.1](LICENSE.txt), with the Reserved
+Font Name **Fractal Mono**.
 
-Fractal Mono is available under the [SIL Open Font License 1.1](OFL.txt). Required notices for inherited OFL components are retained in the licence and font metadata.
+In plain terms: use it for anything, personal or commercial, bundle it with your
+software, embed it in a document, and modify it. Two conditions. Keep the
+copyright and licence notice with it. And if you modify it, release your version
+under a different name — the reserved name stays with the original, so "Fractal
+Mono" always means this font.
+
+## Credits
+
+Designed and built by Claudia Nathan.
+
+- [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) 2.304 by the
+  JetBrains Mono Project Authors — the source master the upright is transformed
+  from. SIL Open Font License 1.1.
+- [Whois Mono](https://github.com/raphaelbastide/Whois-mono) by Raphaël Bastide —
+  the lowercase `r` construction. SIL Open Font License 1.1.
+
+Both notices are reproduced in full in [LICENSE.txt](LICENSE.txt).

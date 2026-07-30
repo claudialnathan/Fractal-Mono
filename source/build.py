@@ -1376,7 +1376,11 @@ def set_family_names(font: TTFont, style: str, weight: int) -> None:
     set_name(
         font,
         0,
-        "Copyright 2026 Claudia Nathan. Copyright 2020 The JetBrains Mono Project Authors. Portions from Whois Mono created by Raphaël Bastide.",
+        (
+            'Copyright 2026 Claudia Nathan, with Reserved Font Name "Fractal Mono". '
+            "Copyright 2020 The JetBrains Mono Project Authors. "
+            "Portions from Whois Mono created by Raphaël Bastide."
+        ),
     )
     set_name(font, 1, legacy_family)
     set_name(font, 2, legacy_style)
@@ -1838,6 +1842,27 @@ def pin_timestamp(font: TTFont) -> None:
     font["head"].created = BUILD_TIMESTAMP
 
 
+def sync_package_version() -> None:
+    """Keep the npm manifests on the one declared version.
+
+    They cannot import source/version.py, so the build writes them instead of
+    trusting anyone to remember.
+    """
+    for name in ("package.json", "package-lock.json"):
+        path = PROJECT / name
+        if not path.exists():
+            continue
+        data = json.loads(path.read_text())
+        changed = data.get("version") != PACKAGE_VERSION
+        data["version"] = PACKAGE_VERSION
+        root = data.get("packages", {}).get("")
+        if root is not None and root.get("version") != PACKAGE_VERSION:
+            root["version"] = PACKAGE_VERSION
+            changed = True
+        if changed:
+            path.write_text(json.dumps(data, indent=2) + "\n")
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -1989,6 +2014,7 @@ def main() -> None:
         },
     }
     (PROJECT / "build-report.json").write_text(json.dumps(report, indent=2) + "\n")
+    sync_package_version()
 
 
 if __name__ == "__main__":

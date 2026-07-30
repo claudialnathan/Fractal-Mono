@@ -1,8 +1,8 @@
 """Geometry gates over the whole design space.
 
-Every defect these checks cover shipped in 1.305 with the existing release
-validation passing. They sample the axes rather than only the master locations,
-because the failures lived between masters:
+Every defect these checks cover once shipped with the metadata validation passing.
+They sample the axes rather than only the master locations, because the failures
+lived between masters:
 
 - the lowercase w self-intersected from wght 300 up, its vertex cuts having
   inverted from +20 units at Thin to -79 at ExtraBold;
@@ -73,8 +73,8 @@ ACCEPTED_OVERLAP_GLYPHS = frozenset(
 
 # The ring in these two runs from 0.86x the stem at Thin to 0.37x at ExtraBold.
 # It is a curve, so the straight-stroke system cannot restate it, and it behaves
-# identically in 1.305. Reported every run so it stays visible rather than
-# quietly passing.
+# the same way in every earlier build. Reported every run so it stays visible
+# rather than quietly passing.
 KNOWN_WEAK_INK = {"copyright": 0.44, "registered": 0.42}
 
 CELL_TOLERANCE = 12
@@ -381,7 +381,7 @@ def main() -> int:
             if glyph_name in KNOWN_WEAK_INK:
                 notes.append(
                     f"{glyph_name} gains only {gain:.0%} of ink across the axis "
-                    "(known: its ring is a curve, unchanged since 1.305)"
+                    "(known: its ring is a curve the stroke system cannot restate)"
                 )
             else:
                 failures.append(
