@@ -480,6 +480,32 @@ def main() -> int:
                         f"({offset_x:+.1f}, {offset_y:+.1f}) at wght {weight} opsz {optical:g}"
                     )
 
+    # 8. report ink that falls outside the clipping box declared in OS/2
+    os2 = base["OS/2"]
+    lowest, highest = 0.0, 0.0
+    lowest_at = highest_at = None
+    for weight in (100, 400, 800):
+        for optical in OPTICAL_SAMPLES:
+            font = instance(weight, optical)
+            for glyph_name in sorted(set(base.getBestCmap().values())):
+                shapes = contours_of(font, glyph_name)
+                if not shapes:
+                    continue
+                box = bounds(shapes)
+                if box[1] < lowest:
+                    lowest, lowest_at = box[1], glyph_name
+                if box[3] > highest:
+                    highest, highest_at = box[3], glyph_name
+    if lowest < -os2.usWinDescent or highest > os2.usWinAscent:
+        notes.append(
+            f"ink reaches {highest:.0f} ({highest_at}) and {lowest:.0f} ({lowest_at}) "
+            f"against usWinAscent {os2.usWinAscent} / usWinDescent -{os2.usWinDescent}. "
+            "Box-drawing glyphs are meant to pass the em box so they tile, but legacy "
+            "Windows rendering clips to the win metrics. Raising them to "
+            f"{int(highest) + 1}/{int(-lowest) + 1} would cover it; USE_TYPO_METRICS is "
+            "on, so conforming apps would keep the same line height"
+        )
+
     print(f"checked {len(encoded)} encoded glyphs across "
           f"{len(WEIGHT_SAMPLES)} weights and {len(OPTICAL_SAMPLES)} optical sizes")
     for note in notes:

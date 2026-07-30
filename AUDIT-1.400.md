@@ -120,6 +120,21 @@ optical sizes, as are `W`, `k`, `K`, and `M`.
   addressed: correcting it means pinning the angle, which moves more of the
   approved drawing than thickness alone.
 
+## Open, reported every run
+
+`usWinAscent` is 1000 and `usWinDescent` 300, but box-drawing ink reaches 1009 and
+-384 (`uni2502` and its neighbours). Those glyphs are supposed to pass the em box
+so a vertical rule joins the row above and below, but the win metrics are the
+clipping box on legacy Windows rendering, so a TUI border could lose a pixel
+there. Raising them to 1010/385 covers it, and because `USE_TYPO_METRICS` is set,
+every conforming application would keep the line height it has now — only
+applications that ignore that flag would space lines from 1.30 em to 1.40 em.
+Left as it is because vertical metrics affect layout everywhere and nothing on
+macOS is affected; `validate_geometry.py` reports it on every run.
+
+Text glyphs reach -253 and 959 against typo metrics of -250 and 950. Three and
+nine units of overhang on a `line-height: 1` box is normal and needs nothing.
+
 ## Method note
 
 Two findings were retracted during the audit rather than acted on. An apparent
