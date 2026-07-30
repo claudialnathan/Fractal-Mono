@@ -195,3 +195,84 @@ def apply(font) -> dict[str, float]:
             font["hmtx"].metrics[name] = (ADVANCE, glyph.xMin)
             by_name[name] = change
     return by_name
+
+
+# X_SCALE_BY_CHAR fits these glyphs by scaling them horizontally, which takes their
+# vertical stem with it: l is scaled 0.87 and its stem came out 70 against the
+# family's 80, and 1 at 0.82 came out 66. The scale is kept, because it is what sets
+# their width; the stem is put back afterwards.
+# Only glyphs with one unambiguous vertical stem. The curved digits have no such
+# stem, and detecting a "narrowest run" on them finds the thin part of a curve and
+# corrects the wrong thing - it took 5 from 83 to 76 and 8 from 78 to 66.
+STEM_COMPENSATED = ("l", "one")
+REGULAR_STEM = 80.0
+
+
+def _stem_band(glyph, glyf, samples: int = 40):
+    """Centre and width of the narrowest consistent vertical run of ink."""
+    coordinates, endpoints, _ = glyph.getCoordinates(glyf)
+    if not len(coordinates):
+        return None
+    ys = [y for _, y in coordinates]
+    low, high = min(ys), max(ys)
+    contours, start = [], 0
+    for end in endpoints:
+        contours.append([tuple(coordinates[i]) for i in range(start, end + 1)])
+        start = end + 1
+
+    candidates = []
+    for index in range(samples):
+        y = low + (high - low) * (index + 0.5) / samples
+        spans = _spans(contours, y)
+        if not spans:
+            continue
+        narrowest = min(spans, key=lambda span: span[1] - span[0])
+        candidates.append(narrowest)
+    if not candidates:
+        return None
+    widths = sorted(span[1] - span[0] for span in candidates)
+    median_width = widths[len(widths) // 2]
+    # Take the centre from the runs closest to that width, so a shoulder or a
+    # terminal cannot drag it.
+    close = [s for s in candidates if abs((s[1] - s[0]) - median_width) <= 2]
+    centres = sorted((s[0] + s[1]) / 2 for s in close)
+    return centres[len(centres) // 2], median_width
+
+
+def restore_stem(glyph, glyf, target: float = REGULAR_STEM, scale: float = 1.0):
+    """Widen the vertical stem back to target without changing the glyph's width.
+
+    Everything left of the stem's centre moves left and everything right moves
+    right, so the only horizontal distance that changes is the one spanning that
+    centre, which is the stem itself.
+    """
+    band = _stem_band(glyph, glyf)
+    if band is None:
+        return None
+    centre, width = band
+    wanted = target * scale if scale != 1.0 else target
+    delta = (wanted - width) / 2
+    if abs(delta) < 0.5:
+        return None
+    glyph.coordinates = GlyphCoordinates(
+        [(round(x - delta if x < centre else x + delta), y) for x, y in glyph.coordinates]
+    )
+    return delta * 2
+
+
+def apply_stem_compensation(font, stem: float) -> dict[str, float]:
+    """`stem` is the family's stem at this master's weight, not a constant."""
+    glyf = font["glyf"]
+    result: dict[str, float] = {}
+    for name in STEM_COMPENSATED:
+        if name not in glyf:
+            continue
+        glyph = glyf[name]
+        if glyph.numberOfContours <= 0:
+            continue
+        change = restore_stem(glyph, glyf, target=stem)
+        if change is not None:
+            glyph.recalcBounds(glyf)
+            font["hmtx"].metrics[name] = (ADVANCE, glyph.xMin)
+            result[name] = change
+    return result

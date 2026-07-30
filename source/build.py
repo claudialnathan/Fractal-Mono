@@ -35,6 +35,7 @@ from fractal_geometry import (
     install_square_ellipsis,
     install_square_marks,
     fit_glyphs_to_cell,
+    stem_for_weight,
     offset_glyph_stable,
 )
 import fitting
@@ -1746,6 +1747,9 @@ def make_optical_master(
     install_square_marks(font, user_weight, opsz)
     install_square_ellipsis(font, user_weight, opsz)
     REFITTED.update(fitting.apply(font))
+    REFITTED.update(
+        fitting.apply_stem_compensation(font, stem_for_weight(user_weight))
+    )
     # The dotless alternates copy their bowls from O, o and zero, so they are
     # re-derived after the fitting pass has moved those sidebearings.
     install_dotless_counter_glyphs(font)

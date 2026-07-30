@@ -10,3 +10,5 @@ tmp/
 archive/*.zip
 notes/
 specimen.txt
+openspec/
+.claude/

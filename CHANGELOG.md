@@ -36,7 +36,9 @@ character variants, tabular figures, fractions, superiors, and inferiors.
 the cell, rounds tighter at 0.112 — so a round letter looks as evenly spaced as a
 flat one. `source/fitting.py` changes a letter's width by translating its outermost
 ink bands and stretching only the space between them, so stroke weights survive
-where a horizontal scale would have thinned them.
+where a horizontal scale would have thinned them. Where a glyph's width does come
+from a scale, its stem is put back afterwards: `l` and `1` had carried stems of 70
+and 66 against the family's 80.
 
 **Details.** Dots on `i`, `j`, punctuation, and combining marks are exact squares
 built from one integer edge plus one integer size. The counter dots in `O`, `o`,
