@@ -34,9 +34,11 @@ VARIABLE = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
 
 ADVANCE = 579
 CAP_HEIGHT = 680
-STEM_ANCHORS = (50.0, 80.0, 150.0)
+STEM_ANCHORS = (32.0, 80.0, 150.0)
 WEIGHT_SAMPLES = list(range(100, 801, 25))
 OPTICAL_SAMPLES = (9.0, 14.0, 72.0)
+WIDTH_SAMPLES = (85.0, 100.0, 115.0)
+CLEAN_A_WEIGHT_SAMPLES = (100, 200, 300, 400, 461, 500, 620, 800)
 
 # Measured against the stem at the same instance. Every audited reference family
 # (Inter 4.1, ABC Diatype Mono, TT Commons Pro Mono, KH Teka Mono, Berkeley Mono)
@@ -238,8 +240,12 @@ def filled_area(contours, step=8):
 
 def target_stem(weight):
     if weight <= 400:
-        return STEM_ANCHORS[0] * (STEM_ANCHORS[1] / STEM_ANCHORS[0]) ** ((weight - 100) / 300)
-    return STEM_ANCHORS[1] * (STEM_ANCHORS[2] / STEM_ANCHORS[1]) ** ((weight - 400) / 400)
+        return STEM_ANCHORS[0] + (
+            (STEM_ANCHORS[1] - STEM_ANCHORS[0]) * (weight - 100) / 300
+        )
+    return STEM_ANCHORS[1] + (
+        (STEM_ANCHORS[2] - STEM_ANCHORS[1]) * (weight - 400) / 400
+    )
 
 
 def measure_stem(font):
@@ -298,7 +304,9 @@ def main() -> int:
             )
         return instances[key]
 
-    # 1. the weight ramp is an even proportional progression
+    # 1. the weight ramp uses even absolute stem increments on either side of
+    # the accepted Regular. This follows the measured Geist Mono ramp while
+    # preserving Fractal Mono's approved Regular and ExtraBold endpoints.
     for weight in (100, 200, 300, 400, 450, 500, 600, 700, 800):
         stem = measure_stem(instance(weight))
         expected = target_stem(weight)
@@ -306,13 +314,13 @@ def main() -> int:
             failures.append(
                 f"stem at wght {weight} is {stem:.1f}, expected {expected:.1f}"
             )
-    ratios = []
+    increments = []
     for a, b in zip((100, 200, 300, 400, 500, 600, 700), (200, 300, 400, 500, 600, 700, 800)):
-        ratios.append(measure_stem(instance(b)) / measure_stem(instance(a)))
-    if max(ratios) / min(ratios) > 1.06:
+        increments.append(measure_stem(instance(b)) - measure_stem(instance(a)))
+    if max(increments) - min(increments) > 2:
         failures.append(
-            "weight ramp is uneven: step ratios "
-            + ", ".join(f"{r:.3f}" for r in ratios)
+            "weight ramp is uneven: 100-step stem increments "
+            + ", ".join(f"{step:.1f}" for step in increments)
         )
 
     # 2. no glyph gains or loses a self-intersection across the axis
@@ -326,6 +334,14 @@ def main() -> int:
     inherited = 0
     for glyph_name, series in counts.items():
         values = set(series.values())
+        if glyph_name == "a" and any(values):
+            detail = " ".join(
+                f"{weight}:{count}"
+                for weight, count in sorted(series.items())
+                if count
+            )
+            failures.append(f"a terminal self-intersects across wght ({detail})")
+            continue
         if len(values) == 1:
             # One constant count is how the outline is built, not something the
             # axis does to it. Nonzero means an overlapping join inherited from
@@ -341,6 +357,25 @@ def main() -> int:
                 f"{glyph_name} gains a self-intersection across the axis ({detail})"
             )
     notes.append(f"{inherited} glyphs carry a constant inherited overlapping join")
+
+    # The source a used to carry one constant lower-right overlap. Filled text
+    # hid it through winding, but outlining the glyph and applying a stroke
+    # revealed a triangular cusp. Keep that boundary clean at all axis extremes.
+    for width in (WIDTH_SAMPLES[0], WIDTH_SAMPLES[-1]):
+        for optical in OPTICAL_SAMPLES:
+            for weight in CLEAN_A_WEIGHT_SAMPLES:
+                font = instantiateVariableFont(
+                    TTFont(VARIABLE),
+                    {"wght": weight, "wdth": width, "opsz": optical},
+                    inplace=True,
+                )
+                intersections = self_intersections(contours_of(font, "a"))
+                if intersections:
+                    failures.append(
+                        "a terminal self-intersects "
+                        f"{intersections} time(s) at wght {weight}, "
+                        f"wdth {width:g}, opsz {optical:g}"
+                    )
 
     # 3. diagonals stay inside the family stroke system
     for glyph_name, (low, high, index) in DIAGONAL_PROBES.items():

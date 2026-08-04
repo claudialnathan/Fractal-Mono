@@ -34,6 +34,7 @@
   --shell: 76rem;
   --wide-shell: 94rem;
   --tester-weight: 400;
+  --tester-width: 100;
   --tester-optical: 14;
   --tester-size: 72px;
   --tester-leading: 1.05;
@@ -707,7 +708,9 @@ input[type="checkbox"] {
   font-size: var(--tester-size);
   font-weight: var(--tester-weight);
   font-optical-sizing: none;
-  font-variation-settings: "opsz" var(--tester-optical);
+  font-variation-settings:
+    "wdth" var(--tester-width),
+    "opsz" var(--tester-optical);
   letter-spacing: var(--tester-tracking);
   line-height: var(--tester-leading);
   text-align: var(--tester-align);

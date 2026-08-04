@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import unicodedata
+from copy import deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -29,6 +30,11 @@ DEFAULT_OPSZ = 14
 TEXT_OPSZ = 9
 DISPLAY_OPSZ = 72
 REGULAR_STEM = 80
+SOURCE_THIN_STEM = 50
+THIN_STEM = 32
+LOWER_WEIGHT_EXTRAPOLATION = (
+    (REGULAR_STEM - THIN_STEM) / (REGULAR_STEM - SOURCE_THIN_STEM)
+)
 
 
 def _reference_paths() -> dict[str, str]:
@@ -223,7 +229,9 @@ SIGNATURE_MASTERS_PATH = Path(__file__).with_name("signature_masters.json")
 
 def stem_for_weight(weight: float) -> float:
     if weight <= 400:
-        return 50 + (weight - 100) * (30 / 300)
+        return THIN_STEM + (weight - 100) * (
+            (REGULAR_STEM - THIN_STEM) / 300
+        )
     return 80 + (weight - 400) * (70 / 400)
 
 
@@ -448,9 +456,16 @@ def _master_outline(name: str, weight: float):
     weights = [float(value) for value in data["weights"]]
     masters = data["masters"]
 
+    # The stored signature masters predate the 32-unit Thin and reach 50 units at
+    # their light endpoint. Extrapolate their compatible Thin-to-Regular motion
+    # by the same factor as the inherited source glyphs. This keeps Fractal's
+    # drawn M/S/J/K/R and preserved t/f/l/O/o/zero on the family-wide ramp.
+    if weight < 400:
+        weight = 400 + (weight - 400) * LOWER_WEIGHT_EXTRAPOLATION
+
     if weight <= weights[0]:
-        lower = upper = weights[0]
-        fraction = 0
+        lower, upper = weights[0], weights[1]
+        fraction = (weight - lower) / (upper - lower)
     elif weight >= weights[-1]:
         lower = upper = weights[-1]
         fraction = 0
@@ -509,32 +524,35 @@ def _apply_signature_optical_geometry(
     opsz: float,
     weight: float,
 ) -> None:
-    if opsz == DEFAULT_OPSZ:
-        return
+    if opsz != DEFAULT_OPSZ:
+        if name == "R":
+            # R's vertical is already slightly lighter than H at the upper
+            # midweights; the generic display tightening made that difference
+            # visible. Keep more of its width while retaining the display cut.
+            x_factor = optical_value(opsz, 1.005, 1, 0.990)
+        elif name in {"J", "K", "M", "W", "S", "O"}:
+            x_factor = optical_value(opsz, 1.005, 1, 0.975)
+        elif name in {"j", "t", "f", "l", "r", "o"}:
+            x_factor = optical_value(opsz, 1.010, 1, 0.980)
+        elif name == "zero":
+            x_factor = optical_value(opsz, 1.008, 1, 0.985)
+        elif REFERENCE_SPECS.get(name, ReferenceSpec(1, 0)).optical_x:
+            x_factor = optical_value(opsz, 1.006, 1, 0.975)
+        else:
+            x_factor = 1
 
-    if name in {"J", "K", "M", "R", "W", "S", "O"}:
-        x_factor = optical_value(opsz, 1.005, 1, 0.975)
-    elif name in {"j", "t", "f", "l", "r", "o"}:
-        x_factor = optical_value(opsz, 1.010, 1, 0.980)
-    elif name == "zero":
-        x_factor = optical_value(opsz, 1.008, 1, 0.985)
-    elif REFERENCE_SPECS.get(name, ReferenceSpec(1, 0)).optical_x:
-        x_factor = optical_value(opsz, 1.006, 1, 0.975)
-    else:
-        x_factor = 1
-
-    transformed = []
-    rigid_ascender_details = {
-        "f": frozenset(range(5, 15)),
-        "l": frozenset(range(3, 7)),
-    }.get(name, frozenset())
-    for index, (x, y) in enumerate(glyph.coordinates):
-        x = ADVANCE / 2 + (x - ADVANCE / 2) * x_factor
-        if name in {"j", "t", "f", "l", "r", "o"}:
-            if index not in rigid_ascender_details:
-                y = _lowercase_y(y, opsz)
-        transformed.append((round(x), round(y)))
-    glyph.coordinates = GlyphCoordinates(transformed)
+        transformed = []
+        rigid_ascender_details = {
+            "f": frozenset(range(5, 15)),
+            "l": frozenset(range(3, 7)),
+        }.get(name, frozenset())
+        for index, (x, y) in enumerate(glyph.coordinates):
+            x = ADVANCE / 2 + (x - ADVANCE / 2) * x_factor
+            if name in {"j", "t", "f", "l", "r", "o"}:
+                if index not in rigid_ascender_details:
+                    y = _lowercase_y(y, opsz)
+            transformed.append((round(x), round(y)))
+        glyph.coordinates = GlyphCoordinates(transformed)
 
     # Free-standing dots all share one size, so they stay identical to the i and
     # j tittles built from the shared mark. Taking each one from its own already
@@ -584,8 +602,88 @@ def build_reference_glyph(name: str, weight: float, opsz: float):
             reference=reference,
             reference_stem=stroke_system.reference_stem(reference, name),
         )
+    if name == "J":
+        _stabilize_j_terminal(glyph)
+    elif name == "K":
+        _stabilize_thin_k(glyph)
+    elif name == "M":
+        _stabilize_thin_m(glyph)
+    elif name == "W":
+        _stabilize_thin_w(glyph)
+    elif name == "asterisk":
+        _stabilize_thin_asterisk(glyph)
     _apply_signature_optical_geometry(name, glyph, opsz, weight)
     return glyph
+
+
+def _stabilize_j_terminal(glyph) -> None:
+    """Keep the lower hook control inside its adjoining curve endpoints."""
+    points = glyph.coordinates
+    if len(points) < 11:
+        return
+    low = min(points[8][0], points[10][0]) + 1
+    high = max(points[8][0], points[10][0]) - 1
+    if low <= high:
+        points[9] = (min(max(points[9][0], low), high), points[9][1])
+
+
+def _stabilize_thin_k(glyph) -> None:
+    """Keep the lower bridge from folding back through the Thin diagonal."""
+    points = glyph.coordinates
+    if len(points) < 14 or points[12][0] < points[9][0]:
+        return
+    points[12] = (points[9][0] - 3, points[12][1])
+
+
+def _stabilize_thin_m(glyph) -> None:
+    """Keep the upper-right inner join from looping at the extrapolated Thin."""
+    points = glyph.coordinates
+    if len(points) < 18 or points[17][1] <= 668:
+        return
+    shift = points[17][1] - 668
+    for index in (14, 15, 16, 17):
+        points[index] = (points[index][0], points[index][1] - shift)
+    # At the two lightest samples the final quadratic control approaches the
+    # join from the opposite direction to the outgoing diagonal, producing a
+    # tiny loop. Put the control beyond the join along the continuation instead.
+    points[16] = (
+        points[17][0] + 2,
+        min(CAP_HEIGHT, points[17][1] + 6),
+    )
+
+
+def _stabilize_thin_w(glyph) -> None:
+    """Keep the two lower vertex cuts outside the adjoining diagonal edges."""
+    points = glyph.coordinates
+    if len(points) < 31:
+        return
+    vertex_y = max(points[3][1], points[9][1])
+    central_y = points[29][1]
+    if 0 < vertex_y < central_y:
+        fraction = vertex_y / central_y
+        target_x = max(points[3][0], points[9][0]) + 2
+        required = (
+            target_x - points[29][0] * fraction
+        ) / (1 - fraction)
+        points[30] = (
+            max(
+                points[30][0],
+                round(required),
+                max(points[3][0], points[9][0]) + 3,
+            ),
+            points[30][1],
+        )
+    points[22] = (min(points[22][0], points[12][0] + 5), points[22][1])
+
+
+def _stabilize_thin_asterisk(glyph) -> None:
+    """Prevent the two horizontal arms reversing through the centre at Thin."""
+    points = glyph.coordinates
+    if len(points) < 12 or points[5][0] < points[11][0]:
+        return
+    center = (points[5][0] + points[11][0]) / 2
+    points[5] = (round(center - 2), points[5][1])
+    points[11] = (round(center + 2), points[11][1])
 
 
 def _replace_contours(glyph, contours: list[list[tuple[int, int]]]) -> None:
@@ -602,6 +700,152 @@ def _replace_contours(glyph, contours: list[list[tuple[int, int]]]) -> None:
     glyph.flags = bytearray([1] * len(coordinates))
     glyph.numberOfContours = len(contours)
     glyph.program = Program()
+
+
+def _contour_points(glyph, contour_index: int) -> list[tuple[int, int]]:
+    return [
+        tuple(glyph.coordinates[index])
+        for index in _contour_ranges(glyph)[contour_index]
+    ]
+
+
+def _center_outline_y(glyph, target: float) -> None:
+    y_min = min(y for _, y in glyph.coordinates)
+    y_max = max(y for _, y in glyph.coordinates)
+    shift = round(target - (y_min + y_max) / 2)
+    glyph.coordinates = GlyphCoordinates(
+        [(x, y + shift) for x, y in glyph.coordinates]
+    )
+
+
+def _semicolon_tail_from_square(
+    square: list[tuple[int, int]],
+) -> list[tuple[int, int]]:
+    """Continue a colon square into a compact, left-falling comma tail."""
+    left = min(x for x, _ in square)
+    right = max(x for x, _ in square)
+    bottom = min(y for _, y in square)
+    top = max(y for _, y in square)
+    size = right - left
+    tail_bottom = bottom - round(size)
+    tail_left = left + round(size * 0.02)
+    tail_right = left + round(size * 0.61)
+    join = left + round(size * 0.33)
+    return [
+        (left, top),
+        (right, top),
+        (right, bottom),
+        (tail_right, tail_bottom),
+        (tail_left, tail_bottom),
+        (join, bottom),
+        (left, bottom),
+    ]
+
+
+def _install_simple_glyph(font, glyph_name: str, glyph) -> None:
+    glyphs = font["glyf"]
+    if glyph_name not in font.getGlyphOrder():
+        glyph_order = font.getGlyphOrder()
+        insert_at = glyph_order.index("semicolon") + 1
+        glyph_order.insert(insert_at, glyph_name)
+        font.setGlyphOrder(glyph_order)
+        font["maxp"].numGlyphs = len(glyph_order)
+        post = font["post"]
+        if post.formatType == 2.0 and glyph_name not in post.extraNames:
+            post.extraNames.append(glyph_name)
+    glyphs[glyph_name] = glyph
+    glyph.recalcBounds(glyphs)
+    font["hmtx"].metrics[glyph_name] = (ADVANCE, glyph.xMin)
+
+
+def _extend_case_substitutions(font) -> None:
+    gsub = font["GSUB"].table
+    lookups = gsub.LookupList.Lookup
+    case_added = False
+    aalt_added = False
+    calt_added = False
+    for record in gsub.FeatureList.FeatureRecord:
+        if record.FeatureTag == "case":
+            for lookup_index in record.Feature.LookupListIndex:
+                lookup = lookups[lookup_index]
+                if lookup.LookupType != 1:
+                    continue
+                for subtable in lookup.SubTable:
+                    subtable.mapping["semicolon"] = "semicolon.case"
+                    case_added = True
+        elif record.FeatureTag == "aalt":
+            for lookup_index in record.Feature.LookupListIndex:
+                lookup = lookups[lookup_index]
+                if lookup.LookupType != 3:
+                    continue
+                for subtable in lookup.SubTable:
+                    alternates = subtable.alternates.get("semicolon")
+                    if alternates is None:
+                        continue
+                    if "semicolon.case" not in alternates:
+                        alternates.insert(0, "semicolon.case")
+                    aalt_added = True
+        elif record.FeatureTag == "calt":
+            for lookup_index in record.Feature.LookupListIndex:
+                lookup = lookups[lookup_index]
+                if lookup.LookupType != 6:
+                    continue
+                for subtable in lookup.SubTable:
+                    if subtable.Format != 3:
+                        continue
+                    for coverage in subtable.InputCoverage:
+                        if "colon" not in coverage.glyphs:
+                            continue
+                        if "semicolon" not in coverage.glyphs:
+                            coverage.glyphs.append("semicolon")
+                        for substitution in subtable.SubstLookupRecord:
+                            child = lookups[substitution.LookupListIndex]
+                            if child.LookupType != 1:
+                                continue
+                            for child_subtable in child.SubTable:
+                                child_subtable.mapping["semicolon"] = (
+                                    "semicolon.case"
+                                )
+                                calt_added = True
+    if not case_added or not aalt_added or not calt_added:
+        raise ValueError(
+            "Unable to extend case/aalt/calt punctuation substitutions"
+        )
+
+
+def _install_related_punctuation(font, opsz: float) -> None:
+    """Build lowercase and capital punctuation from one square system."""
+    glyphs = font["glyf"]
+    colon = glyphs["colon"]
+    lowercase_x_height = optical_value(opsz, 540, X_HEIGHT, 500)
+    _center_outline_y(colon, lowercase_x_height / 2)
+    colon.recalcBounds(glyphs)
+    font["hmtx"].metrics["colon"] = (ADVANCE, colon.xMin)
+
+    colon_case = deepcopy(colon)
+    _center_outline_y(colon_case, CAP_HEIGHT / 2)
+    _install_simple_glyph(font, "colon.case", colon_case)
+
+    semicolon = deepcopy(colon)
+    _replace_contours(
+        semicolon,
+        [
+            _contour_points(colon, 0),
+            _semicolon_tail_from_square(_contour_points(colon, 1)),
+        ],
+    )
+    _install_simple_glyph(font, "semicolon", semicolon)
+
+    semicolon_case = deepcopy(colon_case)
+    _replace_contours(
+        semicolon_case,
+        [
+            _contour_points(colon_case, 0),
+            _semicolon_tail_from_square(_contour_points(colon_case, 1)),
+        ],
+    )
+    _install_simple_glyph(font, "semicolon.case", semicolon_case)
+    _extend_case_substitutions(font)
 
 
 def _clockwise_square(
@@ -863,6 +1107,8 @@ def install_reference_glyphs(font, weight: float, opsz: float) -> None:
         glyph.recalcBounds(glyphs)
         glyphs[glyph_name] = glyph
         font["hmtx"].metrics[glyph_name] = (ADVANCE, glyph.xMin)
+
+    _install_related_punctuation(font, opsz)
 
     for inverted, source in (("exclamdown", "exclam"), ("questiondown", "question")):
         glyph = invert_glyph(glyphs[source])

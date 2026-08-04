@@ -47,6 +47,7 @@ const accessibleStructure = {
   h1: await page.getByRole("heading", { level: 1, name: "Fractal MONO" }).count(),
   h2: await page.getByRole("heading", { level: 2 }).count(),
   slider: await page.getByRole("slider", { name: /Weight axis/i }).count(),
+  widthSlider: await page.getByRole("slider", { name: /Width axis/i }).count(),
   programmingLigatures: await page.getByRole("checkbox", { name: /Optional programming ligatures/i }).count(),
   plainTester: await page.getByRole("textbox", { name: "Plain text" }).count(),
   codeTester: await page.getByRole("textbox", { name: "Code / JavaScript" }).count(),
@@ -62,6 +63,15 @@ const intermediateWeight = await page.locator("#code-tester").evaluate(
   (element) => getComputedStyle(element).fontWeight
 );
 await page.locator("#weight").fill("400");
+await page.locator("#width").fill("115");
+const maxWidth = await page.locator("#plain-tester").evaluate(
+  (element) => getComputedStyle(element).fontVariationSettings
+);
+await page.locator("#width").fill("87");
+const intermediateWidth = await page.locator("#code-tester").evaluate(
+  (element) => getComputedStyle(element).fontVariationSettings
+);
+await page.locator("#width").fill("100");
 
 const plainText = "A live plain-text tester — editable at every weight.";
 const codeText = 'const exact = value === 3 && state !== "idle";';
@@ -140,6 +150,8 @@ const result = {
   accessibleStructure,
   maxWeight,
   intermediateWeight,
+  maxWidth,
+  intermediateWidth,
   testerValues,
   ligatureDefault,
   ligatureEnabled,
@@ -171,6 +183,9 @@ const failures = [
   accessibleStructure.h2 !== 7 && `expected seven level-two headings, received ${accessibleStructure.h2}`,
   maxWeight !== "800" && `weight 800 resolved to ${maxWeight}`,
   intermediateWeight !== "137" && `weight 137 resolved to ${intermediateWeight}`,
+  !maxWidth.includes('"wdth" 115') && `width 115 resolved to ${maxWidth}`,
+  !intermediateWidth.includes('"wdth" 87') &&
+    `width 87 resolved to ${intermediateWidth}`,
   testerValues[0] !== plainText && "plain tester is not editable",
   testerValues[1] !== codeText && "code tester is not editable",
   ligatureDefault !== "none" && `ligatures are not disabled by default: ${ligatureDefault}`,

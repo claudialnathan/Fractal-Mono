@@ -24,6 +24,13 @@ from fractal_geometry import (
     build_reference_glyph,
 )
 from version import PACKAGE_VERSION, VERSION
+from width_axis import (
+    WIDTH_DEFAULT,
+    WIDTH_MAX,
+    WIDTH_MIN,
+    WIDTH_MASTERS,
+    advance_at_width,
+)
 
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -92,17 +99,28 @@ CUSTOM_TOPOLOGY = {
     "question": (2, 33),
     "asciicircum": (1, 8),
     "colon": (2, 8),
-    "semicolon": (2, 8),
+    "colon.case": (2, 8),
+    "semicolon": (2, 11),
+    "semicolon.case": (2, 11),
     "asterisk": (1, 18),
     "period": (1, 4),
 }
+CURVE_HORIZONTAL_PAIRS = {
+    "C": ((13, 14), (27, 28)),
+    "G": ((13, 14), (27, 32), (28, 29), (30, 31)),
+}
+S_TOP_ZONE_POINTS = (24, 25, 26, 27, 28)
+S_BOTTOM_ZONE_POINTS = (54, 55, 56, 57, 58)
+S_TERMINAL_CONTROLS = ((2, 1, 1), (33, 32, -1))
 SQUARE_CONTOURS = {
     "j": (1,),
     "exclam": (1,),
     "question": (1,),
     "period": (0,),
     "colon": (0, 1),
+    "colon.case": (0, 1),
     "semicolon": (0,),
+    "semicolon.case": (0,),
     "uni0307": (0,),
     "uni0308": (0, 1),
     "dotbelowcomb": (0,),
@@ -403,7 +421,10 @@ def shape(text: str, features: str | None = None) -> str:
     command = [
         harfbuzz,
         str(VARIABLE),
-        f"--variations=wght=400,opsz={DEFAULT_OPSZ}",
+        (
+            f"--variations=wght=400,wdth={WIDTH_DEFAULT},"
+            f"opsz={DEFAULT_OPSZ}"
+        ),
     ]
     if features:
         command.append(f"--features={features}")
@@ -419,7 +440,10 @@ def shape_file(path: Path, text: str, features: str | None = None) -> str:
         command = [harfbuzz, str(shape_path)]
         if "Variable" in path.name:
             command.append(
-                f"--variations=wght=400,opsz={DEFAULT_OPSZ}"
+                (
+                    f"--variations=wght=400,wdth={WIDTH_DEFAULT},"
+                    f"opsz={DEFAULT_OPSZ}"
+                )
             )
         if features:
             command.append(f"--features={features}")
@@ -474,7 +498,11 @@ def assert_default_preservation(variable: TTFont) -> int | None:
         previous = TTFont(BytesIO(archive.read(_variable_in(archive))))
 
     preserved: set[str] = set()
-    for weight in (100, 400, 800):
+    # Thin deliberately extends the source's compatible Thin-to-Regular motion
+    # from a 50-unit to a 32-unit stem, so every inherited outline moves there.
+    # Regular is the accepted unchanged source, while ExtraBold remains a useful
+    # regression boundary for glyphs outside the explicitly corrected set.
+    for weight in (400, 800):
         current_instance = instantiateVariableFont(
             variable,
             {"wght": weight, "opsz": DEFAULT_OPSZ},
@@ -540,7 +568,10 @@ def assert_round_dotted_bowls_preserved(variable: TTFont) -> bool:
     with ZipFile(PREVIOUS_RELEASE) as archive:
         previous = TTFont(BytesIO(archive.read(_variable_in(archive))))
 
-    for weight in (100, 400, 800):
+    # The endpoint bowls now receive explicit optical stroke compensation.
+    # Regular is inside the designer-approved protected range and must retain its
+    # established bowl exactly.
+    for weight in (400,):
         current_instance = instantiateVariableFont(
             variable,
             {"wght": weight, "opsz": DEFAULT_OPSZ},
@@ -612,6 +643,12 @@ def main() -> None:
     assert report["axes"] == [
         {"tag": "wght", "min": 100, "default": 400, "max": 800},
         {
+            "tag": "wdth",
+            "min": WIDTH_MIN,
+            "default": WIDTH_DEFAULT,
+            "max": WIDTH_MAX,
+        },
+        {
             "tag": "opsz",
             "min": TEXT_OPSZ,
             "default": DEFAULT_OPSZ,
@@ -625,7 +662,25 @@ def main() -> None:
         "textXHeight": TEXT_X_HEIGHT,
         "defaultXHeight": X_HEIGHT,
         "displayXHeight": DISPLAY_X_HEIGHT,
-        "fixedAdvance": ADVANCE,
+        "normalWidthAdvance": ADVANCE,
+    }
+    assert report["width"] == {
+        "method": (
+            "compatible reach and spacing masters with local "
+            "stroke-thickness compensation"
+        ),
+        "advances": {
+            f"{value:g}": advance_at_width(ADVANCE, value)
+            for value in WIDTH_MASTERS
+        },
+        "preserves": [
+            "weight-axis stem authority",
+            "baseline and vertical zones",
+            "point and component topology",
+            "monospacing at every width instance",
+            "programming-ligature cell boundaries",
+            "mark attachment",
+        ],
     }
     assert report["squareDots"]["contourPoints"] == 4
     assert set(report["squareDots"]["marks"]) == {
@@ -745,12 +800,17 @@ def main() -> None:
 
     variable = TTFont(VARIABLE)
     axes = {axis.axisTag: axis for axis in variable["fvar"].axes}
-    assert set(axes) == {"wght", "opsz"}
+    assert set(axes) == {"wght", "wdth", "opsz"}
     assert (
         axes["wght"].minValue,
         axes["wght"].defaultValue,
         axes["wght"].maxValue,
     ) == (100, 400, 800)
+    assert (
+        axes["wdth"].minValue,
+        axes["wdth"].defaultValue,
+        axes["wdth"].maxValue,
+    ) == (WIDTH_MIN, WIDTH_DEFAULT, WIDTH_MAX)
     assert (
         axes["opsz"].minValue,
         axes["opsz"].defaultValue,
@@ -759,16 +819,23 @@ def main() -> None:
     instance_locations = {
         (
             round(instance.coordinates["wght"]),
+            round(instance.coordinates["wdth"]),
             round(instance.coordinates["opsz"]),
         )
         for instance in variable["fvar"].instances
     }
     assert instance_locations == {
-        (weight, DEFAULT_OPSZ)
+        (weight, WIDTH_DEFAULT, DEFAULT_OPSZ)
         for weight in (100, 200, 300, 400, 450, 500, 600, 700, 800)
     }
-    for tag in ("avar", "STAT", "gasp", "HVAR"):
+    for tag in ("STAT", "gasp", "HVAR"):
         assert tag in variable, f"Missing {tag} table"
+    if "avar" in variable:
+        assert variable["avar"].segments["wght"] == {
+            -1.0: -1.0,
+            0.0: 0.0,
+            1.0: 1.0,
+        }, "non-identity avar mapping reintroduced"
     assert_version_consistency()
     assert_reference_drawings(variable)
     reference_dependent_count = assert_reference_dependents(variable)
@@ -788,6 +855,24 @@ def main() -> None:
     assert dlig_features[0].LookupCount == 152
     assert len(calt_features) == 1
     assert calt_features[0].LookupCount == 2
+    case_mappings = {}
+    for record in feature_records:
+        if record.FeatureTag != "case":
+            continue
+        for lookup_index in record.Feature.LookupListIndex:
+            lookup = variable["GSUB"].table.LookupList.Lookup[lookup_index]
+            if lookup.LookupType != 1:
+                continue
+            for subtable in lookup.SubTable:
+                case_mappings.update(subtable.mapping)
+    assert case_mappings["colon"] == "colon.case"
+    assert case_mappings["semicolon"] == "semicolon.case"
+    assert "colon.case" in shape("A:B", "calt=1,case=0")
+    assert "semicolon.case" in shape("C;D", "calt=1,case=0")
+    assert "colon.case" not in shape("a:b", "calt=1,case=0")
+    assert "semicolon.case" not in shape("c;d", "calt=1,case=0")
+    assert "colon.case" in shape("A:B", "calt=0,case=1")
+    assert "semicolon.case" in shape("C;D", "calt=0,case=1")
     ss03_records = [
         record
         for record in feature_records
@@ -880,6 +965,12 @@ def main() -> None:
             "t crossbar",
         )
         t_crossbar_top = round(t_coordinates[6][1])
+        target_x_height = {9: 540, 14: 528, 72: 500}[opsz]
+        assert t_crossbar_top == target_x_height, (
+            weight,
+            opsz,
+            "t crossbar/x-height alignment",
+        )
         assert all(
             round(t_coordinates[index][1]) == t_crossbar_top
             for index in (7, 10, 11)
@@ -1009,6 +1100,69 @@ def main() -> None:
             for index in (24, 25, 27, 28, 54, 55, 57, 58)
         ), (weight, opsz, "S hard-zone overshoot")
 
+        for glyph_name, pairs in CURVE_HORIZONTAL_PAIRS.items():
+            coordinates = instance["glyf"][glyph_name].coordinates
+            for first, second in pairs:
+                assert abs(
+                    round(coordinates[first][1])
+                    - round(coordinates[second][1])
+                ) <= 1, (
+                    glyph_name,
+                    weight,
+                    opsz,
+                    "rotated structural segment",
+                    first,
+                    second,
+                )
+
+        if weight >= 500:
+            top_zone = [
+                round(s_coordinates[index][1])
+                for index in S_TOP_ZONE_POINTS
+            ]
+            bottom_zone = [
+                round(s_coordinates[index][1])
+                for index in S_BOTTOM_ZONE_POINTS
+            ]
+            assert max(top_zone) - min(top_zone) <= 20, (
+                weight,
+                opsz,
+                "S top-zone dent",
+                top_zone,
+            )
+            assert max(bottom_zone) - min(bottom_zone) <= 20, (
+                weight,
+                opsz,
+                "S bottom-zone dent",
+                bottom_zone,
+            )
+        if weight >= 600:
+            for control, terminal, direction in S_TERMINAL_CONTROLS:
+                difference = abs(
+                    round(s_coordinates[control][1])
+                    - round(s_coordinates[terminal][1])
+                )
+                assert difference <= 6, (
+                    weight,
+                    opsz,
+                    "S terminal-control cusp",
+                    control,
+                    terminal,
+                    difference,
+                )
+                directional_run = (
+                    round(s_coordinates[control][0])
+                    - round(s_coordinates[terminal][0])
+                ) * direction
+                assert directional_run >= 2, (
+                    weight,
+                    opsz,
+                    "S terminal-control collapse",
+                    control,
+                    terminal,
+                    directional_run,
+                )
+
         r_cap_coordinates = instance["glyf"]["R"].coordinates
         r_cap_stem = round(
             r_cap_coordinates[24][0] - r_cap_coordinates[0][0]
@@ -1135,17 +1289,61 @@ def main() -> None:
                     "dotless bowl drift",
                 )
 
-        semicolon_tail = contour_signature(instance, "semicolon", 1)
-        assert len({x for x, _ in semicolon_tail}) > 2, (
-            weight,
-            opsz,
-            "semicolon tail was squared",
-        )
-        assert len({y for _, y in semicolon_tail}) == 2, (
-            weight,
-            opsz,
-            "semicolon tail lost its two flat ends",
-        )
+        target_x_height = {
+            TEXT_OPSZ: TEXT_X_HEIGHT,
+            DEFAULT_OPSZ: X_HEIGHT,
+            DISPLAY_OPSZ: DISPLAY_X_HEIGHT,
+        }[opsz]
+        for colon_name, semicolon_name, target_center in (
+            ("colon", "semicolon", target_x_height / 2),
+            ("colon.case", "semicolon.case", CAP_HEIGHT / 2),
+        ):
+            colon_bounds = glyph_bounds(instance, colon_name)
+            assert abs((colon_bounds[1] + colon_bounds[3]) / 2 - target_center) <= 1
+            colon_top = contour_signature(instance, colon_name, 0)
+            colon_bottom = contour_signature(instance, colon_name, 1)
+            semicolon_top = contour_signature(instance, semicolon_name, 0)
+            semicolon_tail = contour_signature(instance, semicolon_name, 1)
+            assert all(
+                math.dist(left, right) <= 1
+                for left, right in zip(colon_top, semicolon_top)
+            ), (weight, opsz, semicolon_name, "top dot drift")
+
+            left = min(x for x, _ in colon_bottom)
+            right = max(x for x, _ in colon_bottom)
+            bottom = min(y for _, y in colon_bottom)
+            top = max(y for _, y in colon_bottom)
+            expected_corners = {
+                (left, top),
+                (right, top),
+                (right, bottom),
+                (left, bottom),
+            }
+            assert all(
+                any(
+                    math.dist(expected, actual) <= 1.1
+                    for actual in semicolon_tail
+                )
+                for expected in expected_corners
+            ), (
+                weight,
+                opsz,
+                semicolon_name,
+                "comma head no longer derives from colon square",
+            )
+            tail_y_min = min(y for _, y in semicolon_tail)
+            tail_bottom = [
+                (x, y)
+                for x, y in semicolon_tail
+                if y == tail_y_min
+            ]
+            assert len(tail_bottom) == 2
+            assert (
+                max(x for x, _ in tail_bottom)
+                - min(x for x, _ in tail_bottom)
+                < right - left
+            )
+            assert tail_bottom[0][1] < bottom
 
         f_coordinates, _, _ = instance["glyf"]["f"].getCoordinates(
             instance["glyf"]
@@ -1318,12 +1516,18 @@ def main() -> None:
     print(f"PASS: {len(font_paths)} font files parse successfully")
     print("PASS: build report size/hash manifest matches all release files")
     print(f"PASS: all files identify as Version {VERSION}")
-    print("PASS: wght 100–800 and opsz 9–72 axes carry 9 named weight instances")
-    print("PASS: avar, STAT, HVAR, and gasp metadata are present and coherent")
+    print(
+        "PASS: wght 100–800, wdth 85–115, and opsz 9–72 "
+        "carry 9 named weight instances"
+    )
+    print("PASS: identity weight mapping, STAT, HVAR, and gasp metadata are coherent")
     print("PASS: transformed outlines are unhinted and request grayscale smoothing")
     print(f"PASS: 95 printable ASCII characters retain a {ADVANCE}-unit advance across the axis grid")
     print("PASS: Text/Auto/Display masters set x-height to 540/528/500 with cap height fixed")
-    print("PASS: J/j/K/R/r/M/W/S and punctuation designs interpolate at both axes")
+    print(
+        "PASS: J/j/K/R/r/M/W/S and punctuation designs interpolate "
+        "at the weight and optical-size axes"
+    )
     print("PASS: R/r/K reproduce their exact Book reference drawings")
     print(f"PASS: {reference_dependent_count} accented and cross-script R/r/K derivatives inherit the new bases")
     print("PASS: Thin and ExtraBold drawings retain open counters and cell containment")
@@ -1334,7 +1538,8 @@ def main() -> None:
     print("PASS: custom outlines contain no duplicate, closing, or zero-area contours")
     print("PASS: O/o/zero stay dotted by default and ss03 exposes bowl-identical dotless alternates")
     print("PASS: i/j marks, diaeresis, dot-below, punctuation, and ellipsis use square dots")
-    print("PASS: semicolon keeps its tapered tail instead of squaring it")
+    print("PASS: lowercase and case punctuation retain square dots at distinct optical centres")
+    print("PASS: semicolon heads derive from the matching colon square before tapering")
     print(f"PASS: {len(ligature_names)} programming glyphs retain one-cell advances")
     print("PASS: 150 programming ligatures remain optional under dlig; 3 stay literal")
     print("PASS: four-character repeats remain literal instead of partially ligating")

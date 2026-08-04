@@ -15,7 +15,7 @@ from version import VERSION
 PROJECT = Path(__file__).resolve().parents[1]
 FONT = PROJECT / "fonts" / "desktop" / "FractalMono-Variable.ttf"
 OUTPUT = PROJECT / "specimens" / "FractalMono-outline-proof.svg"
-GLYPHS = "JjKRrMWStfilOo0!?^;:*"
+GLYPHS = "JjKRrMWSatcfilOo0!?^;:*"
 WEIGHTS = (100, 200, 300, 400, 450, 500, 600, 700, 800)
 OPTICAL_SIZES = (
     (9, "Text"),

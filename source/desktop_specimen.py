@@ -110,6 +110,7 @@ TEMPLATE = r'''<!doctype html>
         font-display: block;
         font-style: normal;
         font-weight: 100 800;
+        font-stretch: 85% 115%;
       }
 
       :root {
@@ -127,9 +128,11 @@ TEMPLATE = r'''<!doctype html>
         --page-x: clamp(1.25rem, 3vw, 2.25rem);
         --measure: 40rem;
         --specimen-weight: 400;
+        --specimen-width: 100;
         color: var(--foreground);
         background: var(--background);
         font-family: "Fractal Mono Specimen", monospace;
+        font-variation-settings: "wdth" var(--specimen-width);
         font-synthesis: none;
         font-variant-ligatures: none;
         text-rendering: optimizeLegibility;
@@ -806,8 +809,8 @@ TEMPLATE = r'''<!doctype html>
             <dd class="meta-value">__VERSION__</dd>
           </div>
           <div>
-            <dt class="meta-label">Axis</dt>
-            <dd class="meta-value">wght __MIN_WEIGHT__–__MAX_WEIGHT__</dd>
+            <dt class="meta-label">Axes</dt>
+            <dd class="meta-value">wght __MIN_WEIGHT__–__MAX_WEIGHT__ · wdth __MIN_WIDTH__–__MAX_WIDTH__ · opsz 9–72</dd>
           </div>
           <div>
             <dt class="meta-label">Glyphs</dt>
@@ -824,6 +827,9 @@ TEMPLATE = r'''<!doctype html>
         <label class="control-copy" for="weight">Weight <span>axis</span></label>
         <input id="weight" type="range" min="__MIN_WEIGHT__" max="__MAX_WEIGHT__" step="1" value="__DEFAULT_WEIGHT__" />
         <output id="weight-output" for="weight">__DEFAULT_WEIGHT__</output>
+        <label class="control-copy" for="width">Width <span>axis</span></label>
+        <input id="width" type="range" min="__MIN_WIDTH__" max="__MAX_WIDTH__" step="1" value="__DEFAULT_WIDTH__" />
+        <output id="width-output" for="width">__DEFAULT_WIDTH__</output>
         <label class="operator-toggle" for="programming-ligatures">
           <input id="programming-ligatures" type="checkbox" />
           Optional programming ligatures (<code>dlig</code>)
@@ -871,9 +877,10 @@ if (input !== null && count >= 3) {
             <span class="weight-label">Mixed text</span>
             <p class="variable">
               At 09:42 the build moved from queued → running → complete. The
-              result was 1,363 encoded characters, one continuous weight axis,
-              and source-legible sequences such as ===, !==, &gt;=, and &lt;/&gt;.
-              Every joined drawing remains available as an optional feature.
+              result was 1,363 encoded characters, continuous weight and width
+              axes, and source-legible sequences such as ===, !==, &gt;=, and
+              &lt;/&gt;. Every joined drawing remains available as an optional
+              feature.
             </p>
           </article>
         </div>
@@ -998,6 +1005,8 @@ __GLYPH_TILES__
       const root = document.documentElement;
       const weight = document.querySelector("#weight");
       const weightOutput = document.querySelector("#weight-output");
+      const width = document.querySelector("#width");
+      const widthOutput = document.querySelector("#width-output");
       const programmingLigatures = document.querySelector("#programming-ligatures");
       const search = document.querySelector("#character-search");
       const cards = [...document.querySelectorAll(".glyph-card")];
@@ -1011,6 +1020,14 @@ __GLYPH_TILES__
         weightOutput.value = String(value);
         weightOutput.textContent = String(value);
         weight.setAttribute("aria-valuetext", `${value} font weight`);
+      }
+
+      function updateWidth() {
+        const value = Number(width.value);
+        root.style.setProperty("--specimen-width", value);
+        widthOutput.value = String(value);
+        widthOutput.textContent = String(value);
+        width.setAttribute("aria-valuetext", `${value} percent font width`);
       }
 
       function filterCharacters() {
@@ -1028,11 +1045,13 @@ __GLYPH_TILES__
       }
 
       weight.addEventListener("input", updateWeight);
+      width.addEventListener("input", updateWidth);
       programmingLigatures.addEventListener("change", () => {
         root.classList.toggle("programming-ligatures", programmingLigatures.checked);
       });
       search.addEventListener("input", filterCharacters);
       updateWeight();
+      updateWidth();
       filterCharacters();
     </script>
   </body>
@@ -1044,16 +1063,24 @@ def main() -> None:
     OUTPUT.parent.mkdir(exist_ok=True)
     font = TTFont(VARIABLE_TTF)
     cmap = font.getBestCmap()
-    axis = next(axis for axis in font["fvar"].axes if axis.axisTag == "wght")
+    weight_axis = next(
+        axis for axis in font["fvar"].axes if axis.axisTag == "wght"
+    )
+    width_axis = next(
+        axis for axis in font["fvar"].axes if axis.axisTag == "wdth"
+    )
     version = name_value(font, 5, "Version unknown")
     font_data = base64.b64encode(VARIABLE_WOFF2.read_bytes()).decode("ascii")
 
     replacements = {
         "__FONT_DATA__": font_data,
         "__VERSION__": html.escape(version),
-        "__MIN_WEIGHT__": str(int(axis.minValue)),
-        "__DEFAULT_WEIGHT__": str(int(axis.defaultValue)),
-        "__MAX_WEIGHT__": str(int(axis.maxValue)),
+        "__MIN_WEIGHT__": str(int(weight_axis.minValue)),
+        "__DEFAULT_WEIGHT__": str(int(weight_axis.defaultValue)),
+        "__MAX_WEIGHT__": str(int(weight_axis.maxValue)),
+        "__MIN_WIDTH__": str(int(width_axis.minValue)),
+        "__DEFAULT_WIDTH__": str(int(width_axis.defaultValue)),
+        "__MAX_WIDTH__": str(int(width_axis.maxValue)),
         "__GLYPH_COUNT__": f"{font['maxp'].numGlyphs:,}",
         "__CHARACTER_COUNT__": f"{len(cmap):,}",
         "__GLYPH_TILES__": glyph_tiles(cmap),
@@ -1069,7 +1096,11 @@ def main() -> None:
 
     OUTPUT.write_text(artifact, encoding="utf-8")
     print(f"Wrote {OUTPUT}")
-    print(f"Characters: {len(cmap):,}; glyphs: {font['maxp'].numGlyphs:,}; axis: {int(axis.minValue)}–{int(axis.maxValue)}")
+    print(
+        f"Characters: {len(cmap):,}; glyphs: {font['maxp'].numGlyphs:,}; "
+        f"wght: {int(weight_axis.minValue)}–{int(weight_axis.maxValue)}; "
+        f"wdth: {int(width_axis.minValue)}–{int(width_axis.maxValue)}"
+    )
 
 
 if __name__ == "__main__":

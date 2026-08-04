@@ -39,8 +39,17 @@ from fractal_geometry import (
     offset_glyph_stable,
 )
 import fitting
+import drawings
 import key_symbols
 import stroke_system
+from width_axis import (
+    WIDTH_DEFAULT,
+    WIDTH_MASTERS,
+    WIDTH_MAX,
+    WIDTH_MIN,
+    advance_at_width,
+    apply_width_master,
+)
 from version import ARCHIVE_NAME, PACKAGE_VERSION, VERSION
 
 
@@ -82,10 +91,35 @@ WIN_ASCENDER = 1009
 WIN_DESCENDER = 384
 
 # Custom-glyph stem widths at the wght axis extremes and default.
-STEMS_LOWER = (50, 80, 150)
+# Thin was 50, which is 0.63 of Regular; Geist Mono's Thin is 0.37 of its Regular
+# and its light weights are the ones that actually read apart. At 50 the lower half
+# of the axis moved 10 units per named step against 17.5 in the upper half, so it
+# looked static. 32 puts both halves within a unit or two of the same step.
+STEMS_LOWER = (32, 80, 150)
 STEM_ANCHORS = STEMS_LOWER
-WEIGHT_MASTER_DESIGN_LOCATIONS = (100.0, 400.0, 461.0, 620.0, 800.0)
+# The transformed source draws a 50-unit stem at its light endpoint. Fractal's
+# 32-unit Thin therefore sits 1.6 times as far from the approved 80-unit Regular
+# as that endpoint does. Extending the source's compatible variation deltas is
+# materially different from eroding the Regular outline: every point continues
+# along the direction established by the source's real Thin master, so counters,
+# joins, overshoots and component placement remain coherent.
+SOURCE_THIN_STEM = 50.0
+LOWER_WEIGHT_EXTRAPOLATION = (
+    (STEMS_LOWER[1] - STEMS_LOWER[0])
+    / (STEMS_LOWER[1] - SOURCE_THIN_STEM)
+)
+WEIGHT_MASTER_DESIGN_LOCATIONS = (
+    100.0,
+    200.0,
+    300.0,
+    400.0,
+    461.0,
+    500.0,
+    620.0,
+    800.0,
+)
 WEIGHT_AXIS_SAMPLES = (100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800)
+ROUND_STROKE_RATIO = 1.03
 # Filled during the build with the glyphs the cell fit had to recentre, so the
 # regression gate knows which outlines were expected to move.
 CELL_FITTED: set[str] = set()
@@ -106,7 +140,7 @@ LOWERCASE_O_DOT_SCALE = 0.82
 
 # Fractal Mono's lowercase-r construction. Its compatible quadratic point
 # order supports three variable masters while the contour expands along local
-# normals to follow the family's 50/80/150 stem system.
+# normals to follow the family's 32/80/150 stem system.
 FRACTAL_R_REFERENCE_ADVANCE = 996
 FRACTAL_R_REFERENCE_TOP = 1007
 FRACTAL_R_REFERENCE_STEM = 138
@@ -143,7 +177,7 @@ FRACTAL_R_POINTS = (
 
 # Compact construction diagrams for Fractal Mono's lowercase t, k, and w. The
 # coordinates describe the Regular silhouettes, then expand along
-# contour normals to the family's 50/80/150 stem system.
+# contour normals to the family's 32/80/150 stem system.
 FRACTAL_DRAWING_ADVANCE = 600
 FRACTAL_DRAWING_X_HEIGHT = 500
 FRACTAL_DRAWING_CAP_HEIGHT = 700
@@ -1462,6 +1496,7 @@ def install_variable_instances(font: TTFont) -> None:
         )
         instance.coordinates = {
             "wght": float(weight),
+            "wdth": WIDTH_DEFAULT,
             "opsz": float(DEFAULT_OPSZ),
         }
         instance.flags = 0
@@ -1482,6 +1517,11 @@ def install_stat_table(font: TTFont) -> None:
         {"name": "Auto", "value": DEFAULT_OPSZ, "flags": 0x2},
         {"name": "Display", "value": DISPLAY_OPSZ},
     ]
+    width_values = [
+        {"name": "Condensed", "value": WIDTH_MIN},
+        {"name": "Normal", "value": WIDTH_DEFAULT, "flags": 0x2},
+        {"name": "Expanded", "value": WIDTH_MAX},
+    ]
     buildStatTable(
         font,
         [
@@ -1492,9 +1532,15 @@ def install_stat_table(font: TTFont) -> None:
                 "values": weight_values,
             },
             {
+                "tag": "wdth",
+                "name": "Width",
+                "ordering": 1,
+                "values": width_values,
+            },
+            {
                 "tag": "opsz",
                 "name": "Optical Size",
-                "ordering": 1,
+                "ordering": 2,
                 "values": optical_values,
             },
         ],
@@ -1568,6 +1614,12 @@ def transform_weight_variable() -> TTFont:
         # factor at the base point and never translate them.
         base_coordinates = glyph.coordinates if glyph.numberOfContours > 0 else None
         for variation in gvar.variations.get(glyph_name, []):
+            weight_support = variation.axes.get("wght")
+            lower_extrapolation = (
+                LOWER_WEIGHT_EXTRAPOLATION
+                if weight_support is not None and weight_support[1] < 0
+                else 1.0
+            )
             for index, delta in enumerate(variation.coordinates):
                 if delta is None:
                     continue
@@ -1582,7 +1634,10 @@ def transform_weight_variable() -> TTFont:
                     )
                 else:
                     factor = LOWER_ZONE_SCALE
-                variation.coordinates[index] = (round(delta[0] * xx), round(delta[1] * factor))
+                variation.coordinates[index] = (
+                    round(delta[0] * xx * lower_extrapolation),
+                    round(delta[1] * factor * lower_extrapolation),
+                )
 
         if glyph.numberOfContours != 0:
             glyph.recalcBounds(glyphs)
@@ -1675,31 +1730,28 @@ def design_for_stem(stem: float) -> float:
 def target_stem(user_weight: float) -> float:
     """Stem width a named weight should render.
 
-    A constant proportional step keeps every named weight an equal perceptual
-    distance from its neighbours. The three anchors already sit on one geometric
-    progression, so both halves share a ratio of about 1.17 per 100 units.
+    A constant *absolute* step, not a constant ratio. The eye reads the difference
+    in stroke thickness, not the proportion: a geometric progression through these
+    anchors put only 8 units between Thin and ExtraLight and 22 between Bold and
+    ExtraBold, so the light half of the family was indistinguishable while the
+    heavy half jumped. Geist Mono, measured across its own axis, holds a constant
+    18 to 19 units per named step from 100 to 900, and reads evenly the whole way.
+
+    Linear in both halves makes this the same function as `design_stem`, so the
+    `avar` mapping falls out as an identity rather than a correction.
     """
     if user_weight <= 400:
-        return STEM_ANCHORS[0] * (STEM_ANCHORS[1] / STEM_ANCHORS[0]) ** (
-            (user_weight - 100) / 300
+        return STEM_ANCHORS[0] + (user_weight - 100) * (
+            (STEM_ANCHORS[1] - STEM_ANCHORS[0]) / 300
         )
-    return STEM_ANCHORS[1] * (STEM_ANCHORS[2] / STEM_ANCHORS[1]) ** (
-        (user_weight - 400) / 400
+    return STEM_ANCHORS[1] + (user_weight - 400) * (
+        (STEM_ANCHORS[2] - STEM_ANCHORS[1]) / 400
     )
 
 
 def user_for_design(design_weight: float) -> float:
     """Invert the release mapping: which wght value renders this design weight."""
-    stem = design_stem(design_weight)
-    if stem <= STEM_ANCHORS[1]:
-        return 100 + 300 * (
-            math.log(stem / STEM_ANCHORS[0])
-            / math.log(STEM_ANCHORS[1] / STEM_ANCHORS[0])
-        )
-    return 400 + 400 * (
-        math.log(stem / STEM_ANCHORS[1])
-        / math.log(STEM_ANCHORS[2] / STEM_ANCHORS[1])
-    )
+    return design_weight
 
 
 def weight_master_locations() -> list[tuple[float, float]]:
@@ -1719,10 +1771,204 @@ def weight_axis_map() -> list[tuple[float, float]]:
     ]
 
 
+def _simple_contour_bounds(glyph) -> list[tuple[int, int, int, int]]:
+    bounds = []
+    start = 0
+    for endpoint in glyph.endPtsOfContours:
+        points = glyph.coordinates[start : endpoint + 1]
+        bounds.append(
+            (
+                min(x for x, _ in points),
+                min(y for _, y in points),
+                max(x for x, _ in points),
+                max(y for _, y in points),
+            )
+        )
+        start = endpoint + 1
+    return bounds
+
+
+def apply_round_stroke_compensation(font: TTFont, weight: float) -> set[str]:
+    """Make the control bowls optically equal to H outside the accepted middle.
+
+    O, o and zero keep their counters unchanged. Only the outer curve grows, so
+    the maximum round stroke reaches 1.03x the vertical control stem without
+    consuming the heavy counter. The accepted 300–500 drawings stay byte-for-byte
+    untouched, with a 300 master pinning the lower edge of that protected range.
+    """
+    if 300 <= weight <= 500:
+        return set()
+    stem = fitting.measure_vertical_stem(font)
+    if stem is None:
+        return set()
+
+    glyf = font["glyf"]
+    changed = set()
+    for glyph_name in ("O", "o", "zero"):
+        glyph = glyf[glyph_name]
+        contour_bounds = _simple_contour_bounds(glyph)
+        if len(contour_bounds) < 2:
+            continue
+        by_area = sorted(
+            range(len(contour_bounds)),
+            key=lambda index: (
+                (contour_bounds[index][2] - contour_bounds[index][0])
+                * (contour_bounds[index][3] - contour_bounds[index][1])
+            ),
+            reverse=True,
+        )
+        outer_index, counter_index = by_area[:2]
+        outer = contour_bounds[outer_index]
+        counter = contour_bounds[counter_index]
+        current = min(
+            counter[0] - outer[0],
+            outer[2] - counter[2],
+        )
+        amount = stem * ROUND_STROKE_RATIO - current
+        if amount < 0.5:
+            continue
+        offset_glyph_stable(
+            glyph,
+            amount,
+            anchor_y=(outer[1], outer[3]),
+            contour_multipliers=tuple(
+                1.0 if index == outer_index else 0.0
+                for index in range(len(contour_bounds))
+            ),
+        )
+        glyph.recalcBounds(glyf)
+        font["hmtx"].metrics[glyph_name] = (ADVANCE, glyph.xMin)
+        changed.add(glyph_name)
+    return changed
+
+
+def _quadratic_roots(
+    start: float,
+    control: float,
+    end: float,
+    target: float,
+) -> list[float]:
+    """Return the parameter values where one quadratic dimension hits target."""
+    quadratic = start - 2 * control + end
+    linear = 2 * (control - start)
+    constant = start - target
+    if abs(quadratic) < 1e-9:
+        return [] if abs(linear) < 1e-9 else [-constant / linear]
+    discriminant = linear * linear - 4 * quadratic * constant
+    if discriminant < 0:
+        return []
+    root = math.sqrt(discriminant)
+    return [
+        (-linear - root) / (2 * quadratic),
+        (-linear + root) / (2 * quadratic),
+    ]
+
+
+def _quadratic_point(start, control, end, parameter: float) -> tuple[float, float]:
+    inverse = 1 - parameter
+    return (
+        inverse * inverse * start[0]
+        + 2 * inverse * parameter * control[0]
+        + parameter * parameter * end[0],
+        inverse * inverse * start[1]
+        + 2 * inverse * parameter * control[1]
+        + parameter * parameter * end[1],
+    )
+
+
+def repair_lowercase_a_terminal(font: TTFont) -> None:
+    """Trim the inherited bowl loop where it meets the lowercase-a stem.
+
+    The source `a` doubles back through its lower-right join. Filled rendering
+    hides that loop through the nonzero winding rule, but converting the glyph to
+    outlines and adding a stroke exposes a triangular cusp. The visible boundary
+    is the right-hand part of the first bowl quadratic after it intersects the
+    incoming stem corner. Split that quadratic at the intersection and retain an
+    identical point/flag topology in every master so all three axes interpolate.
+    """
+    glyph = font["glyf"]["a"]
+    points = glyph.coordinates
+    if len(points) < 31 or list(glyph.endPtsOfContours[:2]) != [30, 41]:
+        raise ValueError("lowercase a no longer has the expected compatible topology")
+
+    stem_start = points[24]
+    stem_corner = points[25]
+    join_inner = points[26]
+    curve_start = points[27]
+    curve_control = points[28]
+    curve_end = (
+        (points[28][0] + points[29][0]) / 2,
+        (points[28][1] + points[29][1]) / 2,
+    )
+
+    def between(value: float, first: float, second: float) -> bool:
+        return min(first, second) - 0.1 <= value <= max(first, second) + 0.1
+
+    intersections: list[tuple[float, str, float, tuple[float, float]]] = []
+    for parameter in _quadratic_roots(
+        curve_start[0], curve_control[0], curve_end[0], stem_corner[0]
+    ):
+        if 0 < parameter < 1:
+            point = _quadratic_point(
+                curve_start, curve_control, curve_end, parameter
+            )
+            if between(point[1], stem_start[1], stem_corner[1]):
+                intersections.append(
+                    (abs(point[1] - stem_start[1]), "vertical", parameter, point)
+                )
+
+    for parameter in _quadratic_roots(
+        curve_start[1], curve_control[1], curve_end[1], stem_corner[1]
+    ):
+        if 0 < parameter < 1:
+            point = _quadratic_point(
+                curve_start, curve_control, curve_end, parameter
+            )
+            if between(point[0], stem_corner[0], join_inner[0]):
+                intersections.append(
+                    (
+                        abs(stem_corner[1] - stem_start[1])
+                        + abs(point[0] - stem_corner[0]),
+                        "horizontal",
+                        parameter,
+                        point,
+                    )
+                )
+
+    if not intersections:
+        raise ValueError("lowercase a bowl no longer intersects its inherited join")
+
+    _, edge, parameter, intersection = min(intersections)
+    split_control = (
+        curve_control[0] + (curve_end[0] - curve_control[0]) * parameter,
+        curve_control[1] + (curve_end[1] - curve_control[1]) * parameter,
+    )
+    if edge == "vertical":
+        points[25] = (round(intersection[0]), round(intersection[1]))
+    join_point = (round(intersection[0]), round(intersection[1]))
+    # A coincident pair can acquire a fractional reversal when gvar/IUP packs
+    # integer master deltas. Keep one unit of forward travel into the bowl so
+    # interpolation cannot recreate the loop at an intermediate location.
+    if join_point == tuple(points[25]):
+        direction = -1 if curve_end[0] < intersection[0] else 1
+        join_point = (join_point[0] + direction, join_point[1])
+    points[26] = join_point
+    points[27] = (round(split_control[0]), round(split_control[1]))
+    points[28] = (round(curve_end[0]), round(curve_end[1]))
+    glyph.flags[27] &= ~1
+    glyph.flags[28] |= 1
+    glyph.recalcBounds(font["glyf"])
+    font["hmtx"].metrics["a"] = (
+        font["hmtx"].metrics["a"][0],
+        glyph.xMin,
+    )
+
+
 def make_optical_master(
     weight_variable: TTFont,
     user_weight: float,
     opsz: float,
+    drawing_corrections=None,
 ) -> TTFont:
     font = instantiateVariableFont(
         weight_variable,
@@ -1746,14 +1992,26 @@ def make_optical_master(
     install_reference_glyphs(font, user_weight, opsz)
     install_square_marks(font, user_weight, opsz)
     install_square_ellipsis(font, user_weight, opsz)
-    REFITTED.update(fitting.apply(font))
-    REFITTED.update(
-        fitting.apply_stem_compensation(font, stem_for_weight(user_weight))
-    )
+    stem = stem_for_weight(user_weight)
+    apply_round_stroke_compensation(font, user_weight)
+    REFITTED.update(fitting.apply(font, stem))
+    REFITTED.update(fitting.apply_stem_compensation(font, stem))
+    REFITTED.update(fitting.apply_bar_lengthening(font, stem))
     # The dotless alternates copy their bowls from O, o and zero, so they are
     # re-derived after the fitting pass has moved those sidebearings.
     install_dotless_counter_glyphs(font)
     CELL_FITTED.update(fit_glyphs_to_cell(font))
+    if drawing_corrections is not None:
+        REFITTED.update(
+            {
+                name: 0.0
+                for name in drawings.apply_corrections(
+                    font,
+                    user_weight,
+                    drawing_corrections,
+                )
+            }
+        )
     font.recalcBBoxes = True
     return font
 
@@ -1772,6 +2030,14 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
     weight_axis.map = weight_axis_map()
     designspace.addAxis(weight_axis)
 
+    width_axis = AxisDescriptor()
+    width_axis.name = "Width"
+    width_axis.tag = "wdth"
+    width_axis.minimum = WIDTH_MIN
+    width_axis.default = WIDTH_DEFAULT
+    width_axis.maximum = WIDTH_MAX
+    designspace.addAxis(width_axis)
+
     optical_axis = AxisDescriptor()
     optical_axis.name = "Optical Size"
     optical_axis.tag = "opsz"
@@ -1780,31 +2046,71 @@ def build_optical_variable(weight_variable: TTFont) -> TTFont:
     optical_axis.maximum = DISPLAY_OPSZ
     designspace.addAxis(optical_axis)
 
+    drawing_corrections = {}
+    for opsz in (TEXT_OPSZ, DEFAULT_OPSZ, DISPLAY_OPSZ):
+        reference = make_optical_master(
+            weight_variable,
+            800,
+            opsz,
+        )
+        drawing_corrections[opsz] = drawings.correction_deltas(
+            reference,
+            opsz,
+        )
+
     for user_weight, design_weight in weight_master_locations():
         for opsz in (TEXT_OPSZ, DEFAULT_OPSZ, DISPLAY_OPSZ):
-            master = make_optical_master(
+            normal_master = make_optical_master(
                 weight_variable,
                 user_weight,
                 opsz,
+                drawing_corrections[opsz],
             )
+            # Width changes horizontal reach only. Repair the shared source
+            # outline before deriving width masters so the split point keeps an
+            # identical y coordinate across the whole wdth axis.
+            repair_lowercase_a_terminal(normal_master)
             weight_label = f"{user_weight:.3f}".rstrip("0").rstrip(".")
-            master_path = masters_dir / f"FractalMono-wght{weight_label}-opsz{opsz}.ttf"
-            pin_timestamp(master)
-            master.save(master_path)
+            master_stem = (
+                fitting.measure_vertical_stem(normal_master)
+                or stem_for_weight(user_weight)
+            )
+            for width in WIDTH_MASTERS:
+                # Every width starts from the same repaired normal master rather
+                # than inheriting the preceding width's deformation.
+                master = deepcopy(normal_master)
+                apply_width_master(master, width, master_stem)
+                width_label = f"{width:g}"
+                master_path = (
+                    masters_dir
+                    / (
+                        f"FractalMono-wght{weight_label}"
+                        f"-wdth{width_label}-opsz{opsz}.ttf"
+                    )
+                )
+                pin_timestamp(master)
+                master.save(master_path)
 
-            source = SourceDescriptor()
-            source.name = f"wght-{weight_label}-opsz-{opsz}"
-            source.path = str(master_path)
-            source.location = {
-                "Weight": design_weight,
-                "Optical Size": opsz,
-            }
-            if round(user_weight, 5) == 400 and opsz == DEFAULT_OPSZ:
-                source.copyInfo = True
-                source.copyLib = True
-                source.copyGroups = True
-                source.copyFeatures = True
-            designspace.addSource(source)
+                source = SourceDescriptor()
+                source.name = (
+                    f"wght-{weight_label}-wdth-{width_label}-opsz-{opsz}"
+                )
+                source.path = str(master_path)
+                source.location = {
+                    "Weight": design_weight,
+                    "Width": width,
+                    "Optical Size": opsz,
+                }
+                if (
+                    round(user_weight, 5) == 400
+                    and width == WIDTH_DEFAULT
+                    and opsz == DEFAULT_OPSZ
+                ):
+                    source.copyInfo = True
+                    source.copyLib = True
+                    source.copyGroups = True
+                    source.copyFeatures = True
+                designspace.addSource(source)
 
     designspace_path = BUILD / "FractalMono.designspace"
     designspace.write(designspace_path)
@@ -1830,6 +2136,7 @@ def instantiate_static(variable_path: Path, weight: int, style: str) -> Path:
         variable,
         {
             "wght": weight,
+            "wdth": WIDTH_DEFAULT,
             "opsz": DEFAULT_OPSZ,
         },
         inplace=False,
@@ -1918,7 +2225,7 @@ def main() -> None:
     report = {
         "family": FAMILY,
         "version": VERSION,
-        "format": "TrueType outlines; variable wght and opsz axes plus static instances",
+        "format": "TrueType outlines; variable wght, wdth, and opsz axes plus static instances",
         "metrics": {
             "unitsPerEm": UPM,
             "advanceWidth": ADVANCE,
@@ -1931,6 +2238,12 @@ def main() -> None:
         "axes": [
             {"tag": "wght", "min": 100, "default": 400, "max": 800},
             {
+                "tag": "wdth",
+                "min": WIDTH_MIN,
+                "default": WIDTH_DEFAULT,
+                "max": WIDTH_MAX,
+            },
+            {
                 "tag": "opsz",
                 "min": TEXT_OPSZ,
                 "default": DEFAULT_OPSZ,
@@ -1939,17 +2252,64 @@ def main() -> None:
         ],
         "sourceRegularWeight": SOURCE_REGULAR_WEIGHT,
         "regularStemTarget": STEMS_LOWER[1],
+        "width": {
+            "method": (
+                "compatible reach and spacing masters with local "
+                "stroke-thickness compensation"
+            ),
+            "advances": {
+                f"{value:g}": advance_at_width(ADVANCE, value)
+                for value in WIDTH_MASTERS
+            },
+            "preserves": [
+                "weight-axis stem authority",
+                "baseline and vertical zones",
+                "point and component topology",
+                "monospacing at every width instance",
+                "programming-ligature cell boundaries",
+                "mark attachment",
+            ],
+        },
+        "weightRamp": {
+            "method": "piecewise-linear absolute stem progression",
+            "anchors": {
+                "100": STEMS_LOWER[0],
+                "400": STEMS_LOWER[1],
+                "800": STEMS_LOWER[2],
+            },
+            "protectedDesignRange": [300, 500],
+            "lowerEndpoint": (
+                "compatible Thin-to-Regular source deltas extrapolated 1.6x"
+            ),
+        },
         "curveRepair": {
-            "method": "explicit compatible cubic endpoint masters",
-            "removed": "mechanical endpoint outline offsets for R/r/K",
-            "scope": "R/r/K at weights 100, 450, and 800",
+            "method": (
+                "role-constrained compatible endpoint deltas from designer "
+                "silhouette references"
+            ),
+            "scope": "C/G/M/N/S blended from weight 500 to ExtraBold",
+            "normalization": {
+                "straightTarget": "family stem",
+                "roundTarget": f"{drawings.ROUND_STROKE_RATIO:.2f}x family stem",
+                "hardZones": (
+                    "C/G terminals and G bar remain horizontal; S terminals, "
+                    "baseline, and cap-height controls retain their point roles"
+                ),
+            },
             "preserves": [
                 "metrics",
                 "optical fitting",
                 "zone remap",
-                "canonical Book drawings",
+                "accepted 300-500 drawings",
+                "existing compatible point topology",
                 "variable interpolation",
             ],
+        },
+        "roundStrokeCompensation": {
+            "ratio": ROUND_STROKE_RATIO,
+            "controls": ["O", "o", "zero", "C", "G", "S"],
+            "strategy": "grow outer curves while preserving counters",
+            "protectedDesignRange": [300, 500],
         },
         "dottedLetters": {
             "default": ["O", "o", "zero"],
@@ -1985,7 +2345,7 @@ def main() -> None:
             "textXHeight": 540,
             "defaultXHeight": X_HEIGHT,
             "displayXHeight": 500,
-            "fixedAdvance": ADVANCE,
+            "normalWidthAdvance": ADVANCE,
         },
         "squareDots": {
             "punctuation": [

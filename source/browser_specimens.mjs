@@ -62,11 +62,47 @@ results.mainOverflow = await main.evaluate(
 );
 results.mainVersion = (await main.locator("[data-footer-version]").textContent())?.trim();
 const opticalSlider = main.locator("#tester-optical");
+const widthSlider = main.locator("#tester-width");
 results.opticalDefault = await opticalSlider.inputValue();
+results.widthDefault = await widthSlider.inputValue();
+await widthSlider.fill("115");
 await opticalSlider.fill("72");
 results.opticalDisplay = await main.locator("#tester-text").evaluate(
   (element) => getComputedStyle(element).fontVariationSettings,
 );
+results.widthAnimation = await main.evaluate(async () => {
+  const probe = document.createElement("span");
+  probe.textContent = "MMMMMMMMMM";
+  Object.assign(probe.style, {
+    position: "fixed",
+    inset: "0 auto auto 0",
+    visibility: "hidden",
+    whiteSpace: "pre",
+    fontFamily: '"Fractal Mono", monospace',
+    fontSize: "96px",
+    fontWeight: "400",
+    fontVariationSettings: '"wdth" 85, "opsz" 14',
+  });
+  document.body.append(probe);
+  const condensed = probe.getBoundingClientRect().width;
+  probe.style.fontVariationSettings = '"wdth" 115, "opsz" 14';
+  const expanded = probe.getBoundingClientRect().width;
+  const animation = probe.animate(
+    [
+      { fontVariationSettings: '"wdth" 85, "opsz" 14' },
+      { fontVariationSettings: '"wdth" 115, "opsz" 14' },
+    ],
+    { duration: 1000, fill: "both" },
+  );
+  animation.pause();
+  animation.currentTime = 500;
+  await new Promise((resolveFrame) => requestAnimationFrame(resolveFrame));
+  const midpoint = probe.getBoundingClientRect().width;
+  const settings = getComputedStyle(probe).fontVariationSettings;
+  animation.cancel();
+  probe.remove();
+  return { condensed, midpoint, expanded, settings };
+});
 await main.screenshot({ path: `${specimens}/FractalMono-factsheet.png`, fullPage: true });
 
 const outline = await browser.newPage({ viewport: { width: 1600, height: 760 } });
@@ -101,8 +137,21 @@ const failures = [
     `unexpected main specimen version: ${results.mainVersion}`,
   results.opticalDefault !== "14" &&
     `unexpected optical-size default: ${results.opticalDefault}`,
+  results.widthDefault !== "100" &&
+    `unexpected width default: ${results.widthDefault}`,
   !results.opticalDisplay.includes('"opsz" 72') &&
     `optical-size control did not reach Display: ${results.opticalDisplay}`,
+  !results.opticalDisplay.includes('"wdth" 115') &&
+    `width control did not reach Expanded: ${results.opticalDisplay}`,
+  !(
+    results.widthAnimation.condensed <
+      results.widthAnimation.midpoint &&
+    results.widthAnimation.midpoint <
+      results.widthAnimation.expanded
+  ) &&
+    `wdth animation did not progress monotonically: ${JSON.stringify(results.widthAnimation)}`,
+  !results.widthAnimation.settings.includes('"wdth" 100') &&
+    `wdth animation midpoint is not Normal: ${results.widthAnimation.settings}`,
   ...errors,
 ].filter(Boolean);
 

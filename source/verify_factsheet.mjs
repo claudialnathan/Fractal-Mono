@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 // Read from source/version.py so a release cannot leave this behind.
 const VERSION = readFileSync(new URL("version.py", import.meta.url), "utf8")
   .match(/^VERSION = "([^"]+)"/m)[1];
@@ -123,10 +124,10 @@ const inventory = await desktop.evaluate(() => ({
 assert.equal(inventory.ready, "true");
 assert.equal(inventory.featureCards, 39);
 assert.equal(inventory.glyphCards, 1363);
-assert.equal(inventory.unencodedGlyphs, 383);
+assert.equal(inventory.unencodedGlyphs, 384);
 assert.equal(inventory.languageRows, 363);
 assert.equal(inventory.releaseFiles, 30);
-assert.equal(inventory.fontTables, 19);
+assert.equal(inventory.fontTables, 18);
 assert.equal(inventory.glyphTabStops, 1);
 assert.deepEqual(inventory.headings, { h1: 1, h2: 10 });
 assert.deepEqual(inventory.landmarks, { header: 1, main: 1, footer: 1 });
@@ -135,6 +136,26 @@ assert.equal(inventory.defaultDlig, false);
 assert.equal(inventory.specimenDlig.every((value) => value === false), true);
 assert.match(inventory.optionalCount, /^0 optional features active$/);
 assert.ok(inventory.width.scroll <= inventory.width.viewport + 1);
+
+const featureCards = await desktop.locator(".feature-card").all();
+for (const card of featureCards) {
+  const feature = await card.getAttribute("data-feature");
+  const samples = card.locator(".feature-comparison p");
+  const sampleCount = await samples.count();
+  assert.ok(sampleCount >= 2, `${feature} needs a meaningful comparison`);
+  const hashes = [];
+  for (let index = 0; index < sampleCount; index += 1) {
+    const screenshot = await samples.nth(index).screenshot({
+      animations: "disabled",
+    });
+    hashes.push(createHash("sha256").update(screenshot).digest("hex"));
+  }
+  assert.equal(
+    new Set(hashes).size,
+    sampleCount,
+    `${feature} comparison renders identical examples`,
+  );
+}
 
 await desktop.addScriptTag({ content: axeSource });
 const accessibility = {};
@@ -176,23 +197,37 @@ assert.equal(reducedMotion.scrollBehavior, "auto");
 assert.match(reducedMotion.transitionDuration, /(?:0\.00001|1e-05)s/);
 await desktop.emulateMedia({ reducedMotion: "no-preference" });
 
-await desktop.screenshot({
+await desktop.evaluate(() => {
+  document.documentElement.style.scrollBehavior = "auto";
+  document.scrollingElement.scrollTop = 0;
+});
+await desktop.waitForFunction(() => window.scrollY === 0);
+const lightScreenshot = await desktop.screenshot({
   path: `${output}/FractalMono-factsheet.png`,
   animations: "disabled",
 });
-await desktop.evaluate(() => {
-  window.scrollTo(0, 0);
-});
+assert.ok(lightScreenshot.length > 20_000, "light factsheet screenshot is blank");
 await desktop.keyboard.press("Tab");
 assert.equal(await desktop.locator(":focus").getAttribute("class"), "skip-link");
 await desktop.locator(":focus").blur();
 
 await desktop.locator(".theme-toggle").click();
-await desktop.screenshot({
+await desktop.waitForFunction(
+  () => document.documentElement.dataset.theme === "dark",
+);
+await desktop.evaluate(() => {
+  document.scrollingElement.scrollTop = 0;
+});
+await desktop.waitForFunction(() => window.scrollY === 0);
+const darkScreenshot = await desktop.screenshot({
   path: `${output}/FractalMono-factsheet-dark.png`,
   animations: "disabled",
 });
+assert.ok(darkScreenshot.length > 20_000, "dark factsheet screenshot is blank");
 await desktop.locator(".theme-toggle").click();
+await desktop.evaluate(() => {
+  document.documentElement.style.removeProperty("scroll-behavior");
+});
 
 await desktop.locator('.glyph-card[tabindex="0"]').focus();
 await desktop.keyboard.press("ArrowRight");
@@ -202,16 +237,22 @@ assert.match(
 );
 
 await desktop.locator("#tester-weight").fill("137");
+await desktop.locator("#tester-width").fill("113");
 await desktop.locator("#tester-optical").fill("72");
 await desktop.locator("#tester-size").fill("33");
 await desktop.locator(".ligature-toggle").first().check();
-assert.equal(
-  await desktop.locator("#tester-text").evaluate((element) => {
+const testerStyle = await desktop.locator("#tester-text").evaluate((element) => {
     const style = getComputedStyle(element);
-    return `${style.fontWeight}/${style.fontSize}/${style.fontVariationSettings}`;
-  }),
-  '137/33px/"opsz" 72',
-);
+    return {
+      weight: style.fontWeight,
+      size: style.fontSize,
+      variations: style.fontVariationSettings,
+    };
+  });
+assert.equal(testerStyle.weight, "137");
+assert.equal(testerStyle.size, "33px");
+assert.match(testerStyle.variations, /"opsz" 72/);
+assert.match(testerStyle.variations, /"wdth" 113/);
 assert.equal(
   await desktop.locator(".ligature-toggle").evaluateAll((inputs) =>
     inputs.every((input) => input.checked),
@@ -264,6 +305,10 @@ await desktop.evaluate(() => {
 });
 await desktop.screenshot({
   path: `${output}/FractalMono-factsheet-features.png`,
+  animations: "disabled",
+});
+await desktop.locator('[data-feature="case"]').screenshot({
+  path: `${output}/FractalMono-case-feature.png`,
   animations: "disabled",
 });
 
@@ -348,6 +393,7 @@ console.log(
         "specimens/FractalMono-factsheet.png",
         "specimens/FractalMono-factsheet-dark.png",
         "specimens/FractalMono-factsheet-features.png",
+        "specimens/FractalMono-case-feature.png",
         "specimens/FractalMono-factsheet-mobile.png",
         "specimens/FractalMono-factsheet.pdf",
       ],

@@ -130,6 +130,7 @@ STROKE_PLANS: dict[str, StrokePlan] = {
 # No audited reference family draws a diagonal heavier than its stem at any
 # weight, and one that is reads as an error rather than as compensation.
 MAX_DIAGONAL_RATIO = 1.0
+THIN_MAX_DIAGONAL_RATIO = 0.94
 
 
 def diagonal_ratio(regular_ratio: float, design_weight: float) -> float:
@@ -141,6 +142,14 @@ def diagonal_ratio(regular_ratio: float, design_weight: float) -> float:
     """
     if design_weight <= 400:
         ratio = regular_ratio + (1 - regular_ratio) * 0.55 * (400 - design_weight) / 300
+        # A mathematically stem-wide diagonal still scans 5–7% heavy in K/k at
+        # the 32-unit endpoint because its cut crosses the measurement band.
+        # Let the cap converge from 0.94 at Thin to 1.00 at Regular; this is an
+        # optical endpoint correction and leaves the approved Regular untouched.
+        thin_cap = THIN_MAX_DIAGONAL_RATIO + (
+            MAX_DIAGONAL_RATIO - THIN_MAX_DIAGONAL_RATIO
+        ) * (design_weight - 100) / 300
+        ratio = min(ratio, thin_cap)
     else:
         ratio = regular_ratio - 0.05 * (design_weight - 400) / 400
     return min(MAX_DIAGONAL_RATIO, ratio)

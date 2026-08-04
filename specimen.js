@@ -10,6 +10,7 @@
 
   const root = document.documentElement;
   const weightAxis = data.axes.wght;
+  const widthAxis = data.axes.wdth;
   const opticalAxis = data.axes.opsz;
   const formatNumber = new Intl.NumberFormat("en");
   const normalise = (value) =>
@@ -25,7 +26,7 @@
 
   const factValues = {
     version: data.version,
-    axis: `${weightAxis.tag} ${weightAxis.min}–${weightAxis.max} · ${opticalAxis.tag} ${opticalAxis.min}–${opticalAxis.max}`,
+    axis: `${weightAxis.tag} ${weightAxis.min}–${weightAxis.max} · ${widthAxis.tag} ${widthAxis.min}–${widthAxis.max} · ${opticalAxis.tag} ${opticalAxis.min}–${opticalAxis.max}`,
     instances: formatNumber.format(data.instances.length),
     glyphs: formatNumber.format(data.glyphCount),
     characters: formatNumber.format(data.encodedCount),
@@ -87,6 +88,7 @@
 
   const testerDefaults = {
     weight: weightAxis.default,
+    width: widthAxis.default,
     optical: opticalAxis.default,
     size: 72,
     leading: 1.05,
@@ -96,11 +98,13 @@
   };
   const testerState = { ...testerDefaults };
   const testerWeight = document.querySelector("#tester-weight");
+  const testerWidth = document.querySelector("#tester-width");
   const testerOptical = document.querySelector("#tester-optical");
   const testerSize = document.querySelector("#tester-size");
   const testerLeading = document.querySelector("#tester-leading");
   const testerTracking = document.querySelector("#tester-tracking");
   const weightOutput = document.querySelector("#tester-weight-output");
+  const widthOutput = document.querySelector("#tester-width-output");
   const opticalOutput = document.querySelector("#tester-optical-output");
   const alignButtons = [...document.querySelectorAll("[data-align]")];
   const ligatureToggles = [...document.querySelectorAll(".ligature-toggle")];
@@ -111,6 +115,7 @@
 
   const updateTester = () => {
     root.style.setProperty("--tester-weight", testerState.weight);
+    root.style.setProperty("--tester-width", testerState.width);
     root.style.setProperty("--tester-optical", testerState.optical);
     root.style.setProperty("--tester-size", `${testerState.size}px`);
     root.style.setProperty("--tester-leading", testerState.leading);
@@ -123,6 +128,11 @@
       "aria-valuetext",
       `${testerState.weight} weight`,
     );
+    testerWidth.value = testerState.width;
+    testerWidth.setAttribute(
+      "aria-valuetext",
+      `${testerState.width} percent width`,
+    );
     testerOptical.value = testerState.optical;
     testerOptical.setAttribute(
       "aria-valuetext",
@@ -133,10 +143,13 @@
     testerTracking.value = testerState.tracking;
     weightOutput.value = testerState.weight;
     weightOutput.textContent = testerState.weight;
+    widthOutput.value = testerState.width;
+    widthOutput.textContent = testerState.width;
     opticalOutput.value = testerState.optical;
     opticalOutput.textContent = testerState.optical;
 
     setText('[data-readout="weight"]', testerState.weight);
+    setText('[data-readout="width"]', testerState.width);
     setText('[data-readout="optical"]', testerState.optical);
     setText('[data-readout="size"]', testerState.size);
     setText('[data-readout="leading"]', testerState.leading);
@@ -178,6 +191,10 @@
 
   testerWeight.addEventListener("input", () => {
     testerState.weight = Number(testerWeight.value);
+    updateTester();
+  });
+  testerWidth.addEventListener("input", () => {
+    testerState.width = Number(testerWidth.value);
     updateTester();
   });
   testerOptical.addEventListener("input", () => {
@@ -297,25 +314,38 @@
 
     const comparison = document.createElement("div");
     comparison.className = "feature-comparison";
-    [
-      ["Off", false],
-      ["On", true],
-    ].forEach(([label, enabled]) => {
+    const comparisons = feature.comparisons ?? [
+      {
+        label: "Off",
+        settings: featureSetting(feature.tag, false),
+      },
+      {
+        label: "On",
+        settings: featureSetting(feature.tag, true),
+      },
+    ];
+    comparisons.forEach((item) => {
       const panel = document.createElement("div");
       const caption = document.createElement("span");
-      caption.textContent = label;
+      caption.textContent = item.label;
       const sample = document.createElement("p");
-      sample.textContent = feature.sample;
-      sample.style.fontFeatureSettings = featureSetting(feature.tag, enabled);
+      sample.textContent = item.sample ?? feature.sample;
+      sample.style.fontFeatureSettings = item.settings;
+      if (item.lang) {
+        sample.lang = item.lang;
+      }
       panel.append(caption, sample);
       comparison.append(panel);
     });
 
     let control;
-    if (feature.status === "automatic") {
+    if (feature.status === "automatic" || feature.status === "access") {
       control = document.createElement("p");
       control.className = "feature-toggle feature-automatic";
-      control.textContent = "Applied automatically by the shaping engine";
+      control.textContent =
+        feature.status === "automatic"
+          ? "Applied automatically by the shaping engine"
+          : "Choose a form in a supporting glyph palette";
     } else {
       control = document.createElement("label");
       control.className = "feature-toggle";

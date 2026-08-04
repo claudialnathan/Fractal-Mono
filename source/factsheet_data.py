@@ -22,30 +22,58 @@ BUILD_REPORT = PROJECT / "build-report.json"
 LANGUAGE_SUPPORT = PROJECT / "source" / "language-support.json"
 
 
-FEATURE_DETAILS: dict[str, dict[str, str]] = {
+FEATURE_DETAILS: dict[str, dict[str, Any]] = {
     "aalt": {
         "name": "Access all alternates",
-        "sample": "l t g j K k r u y",
-        "status": "optional",
-        "description": "Exposes the family’s alternate drawings through one feature.",
+        "sample": "K k f l r u y",
+        "status": "access",
+        "description": (
+            "Exposes alternate drawings to supporting glyph palettes rather "
+            "than acting as a binary switch."
+        ),
+        "comparisons": [
+            {"label": "Default", "settings": "normal"},
+            {"label": "One choice", "settings": '"ss01" 1'},
+        ],
     },
     "calt": {
         "name": "Contextual alternates",
-        "sample": "08:42  A:B",
+        "sample": "a:b A:B 08:42",
         "status": "default",
-        "description": "Centers punctuation in suitable contexts. Programming ligatures are not part of calt.",
+        "description": (
+            "Raises square punctuation automatically between capitals and "
+            "lining figures. Programming ligatures are not part of calt."
+        ),
     },
     "case": {
         "name": "Case-sensitive forms",
-        "sample": "(H:H) [A:B]",
+        "sample": "a:b",
         "status": "optional",
-        "description": "Raises punctuation and accents for all-cap settings.",
+        "description": (
+            "Keeps square punctuation centred for lowercase and raises the "
+            "same squares for capitals."
+        ),
+        "comparisons": [
+            {
+                "label": "Off · lowercase",
+                "sample": "a:b",
+                "settings": '"calt" 0, "case" 0',
+            },
+            {
+                "label": "On · capitals",
+                "sample": "A:B",
+                "settings": '"calt" 0, "case" 1',
+            },
+        ],
     },
     "ccmp": {
         "name": "Glyph composition/decomposition",
-        "sample": "ä ǵ ñ",
+        "sample": "i̇ í",
         "status": "automatic",
-        "description": "Builds or decomposes accented forms as required by the shaping engine.",
+        "description": (
+            "Removes the built-in tittle when a combining dot or accent "
+            "supplies the visible mark."
+        ),
     },
     "cv01": {
         "name": "Alternate lowercase l",
@@ -181,21 +209,29 @@ FEATURE_DETAILS: dict[str, dict[str, str]] = {
     },
     "locl": {
         "name": "Localized forms",
-        "sample": "Ş ş Ț ț Í í",
+        "sample": "Ş ş Ţ ţ",
         "status": "automatic",
-        "description": "Selects language-appropriate forms for supported Latin language systems.",
+        "description": "Selects Romanian comma-below forms when the text language is Romanian.",
+        "comparisons": [
+            {"label": "Default", "settings": '"locl" 0', "lang": "ro"},
+            {"label": "Romanian", "settings": '"locl" 1', "lang": "ro"},
+        ],
     },
     "mark": {
         "name": "Mark positioning",
-        "sample": "á g̈ ñ",
+        "sample": "x́ g̈ ñ",
         "status": "automatic",
         "description": "Positions combining marks on their base glyphs.",
     },
     "mkmk": {
         "name": "Mark-to-mark positioning",
-        "sample": "ä́ ṍ",
+        "sample": "ȧ́",
         "status": "automatic",
         "description": "Positions stacked combining marks relative to one another.",
+        "comparisons": [
+            {"label": "Off", "settings": '"ccmp" 0, "mark" 1, "mkmk" 0'},
+            {"label": "On", "settings": '"ccmp" 0, "mark" 1, "mkmk" 1'},
+        ],
     },
     "ordn": {
         "name": "Ordinals",
@@ -232,6 +268,10 @@ FEATURE_DETAILS: dict[str, dict[str, str]] = {
         "sample": "!= !== == ===",
         "status": "optional",
         "description": "Uses broken-bar equality drawings when optional programming ligatures are active.",
+        "comparisons": [
+            {"label": "Solid", "settings": '"dlig" 1, "ss19" 0'},
+            {"label": "Broken", "settings": '"dlig" 1, "ss19" 1'},
+        ],
     },
     "ss20": {
         "name": "Raised bar f",

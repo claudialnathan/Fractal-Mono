@@ -38,8 +38,12 @@ from fractal_geometry import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ARCHIVE = ROOT / "archive" / "FractalMono-v1.252.zip"
-ARCHIVE_FONT = "fonts/desktop/FractalMono-Variable[wght].ttf"
+# A pre-rename artifact. The family-wide CLN -> Fractal rename rewrote both of these
+# to names that have never existed, which broke `make masters` while leaving builds
+# working from the committed signature_masters.json. Historical archive filenames are
+# not ours to rename.
+ARCHIVE = ROOT / "archive" / "CLNMono-v1.252.zip"
+ARCHIVE_FONT = "fonts/desktop/CLNMono-Variable[wght].ttf"
 OUTPUT = Path(__file__).with_name("signature_masters.json")
 
 CUSTOM_NAMES = (

@@ -21,6 +21,9 @@ from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
 
 ADVANCE = 579
 CAP_HEIGHT = 680
+# The family's stem at the default instance. Both the sidebearing targets and the
+# stem restoration are stated relative to it.
+REGULAR_STEM = 80.0
 
 # Sidebearing as a fraction of the cell, at the default instance. Rounds are set
 # tighter than flats and diagonals tighter than rounds: the eye reads a curve or an
@@ -29,6 +32,25 @@ FLAT = 0.132
 ROUND = 0.112
 # Narrow letters keep air instead of being stretched to fill the cell.
 NARROW = 0.200
+
+# A heavier weight fills more of its cell: as the stroke grows the sidebearing has
+# to give way, or the letter keeps a light weight's air around a heavy weight's
+# stroke. Measured across full ladders, ABC Diatype Mono gives up 0.27 units of
+# sidebearing per unit of stem gained and KH Teka Mono 0.29, averaged over their
+# flats; on the glyphs they fit tightest the rate is closer to 0.5.
+#
+# Applying a constant target at every master instead pins ink width across the whole
+# axis. The glyphs this pass reaches then stay at their default width while the ones
+# it excludes - every diagonal, N, and the digits - grow normally, so the two
+# populations drift apart with every step up the ladder and the rhythm comes apart
+# at the heavy end. Measured before this was fixed: cell fill spread rose 0.055 at
+# Thin to 0.081 at ExtraBold, where both reference families fall.
+SHRINK_PER_STEM = 0.51
+
+# The round compensation also grows with weight. At Regular, Diatype sets its rounds
+# 0.006 of a cell tighter than its flats; at Ultra, 0.040 tighter. A heavy curve
+# reads further from its neighbour than a heavy flat does, more so than a light one.
+ROUND_SHRINK_BONUS = 0.14
 
 SHAPE_CLASS: dict[str, float] = {}
 
@@ -132,8 +154,99 @@ def _spans(contours, y):
     return merged
 
 
-def refit(glyph, glyf, target_sidebearing: float) -> float | None:
-    """Move the outermost ink to `target_sidebearing` without changing stroke widths.
+def target_units(fraction: float, stem: float, is_round: bool = False) -> float:
+    """Sidebearing in font units for a shape class at a given weight.
+
+    `fraction` is the class target at the default instance; `stem` is the family's
+    stem at this master's weight. Returns units, not a fraction, so the weight
+    dependence lives in one place.
+    """
+    # Only above the default. Below it the light weights already measured correct -
+    # Thin's flats filled 0.737 of the cell against ABC Diatype Mono Thin's 0.736 -
+    # and letting the target grow toward Thin re-creates the same two-population
+    # split in the other direction: measured, it widened the spacing scatter in
+    # `hamburge` from 0.073 to 0.090 at Thin while fixing nothing.
+    if stem <= REGULAR_STEM:
+        return fraction * ADVANCE
+    rate = SHRINK_PER_STEM + (ROUND_SHRINK_BONUS if is_round else 0.0)
+    return fraction * ADVANCE - rate * (stem - REGULAR_STEM)
+
+
+def _stem_side(glyph, glyf, samples: int = 40) -> str | None:
+    """Which side of a single-band glyph carries the full-height stem.
+
+    `E F I L T` hold one run of ink at almost every height, so `_ink_bands` finds no
+    two bands and returns None - which meant this pass never reached them at any
+    weight, and they kept whatever the masters gave. `L` came out 0.181 of the cell
+    on the left against 0.052 on the right.
+
+    There is nothing to stretch in a single band, only somewhere to put it. The side
+    to fit is the one a stem spans, because a vertical stem is what sets the rhythm
+    against the previous letter; an arm end does not. A stem holds its edge over the
+    glyph's height and an arm does not, so compare how much each edge moves.
+    Returns "left", "right", or None when the two are too close to call, which is
+    the symmetric case - `I` and `T` - where centring is right.
+    """
+    coordinates, endpoints, _ = glyph.getCoordinates(glyf)
+    if not len(coordinates):
+        return None
+    ys = [y for _, y in coordinates]
+    low, high = min(ys), max(ys)
+    if high - low < 1:
+        return None
+    contours_list, start = [], 0
+    for end in endpoints:
+        contours_list.append([tuple(coordinates[i]) for i in range(start, end + 1)])
+        start = end + 1
+
+    lefts, rights = [], []
+    for index in range(samples):
+        y = low + (high - low) * (index + 0.5) / samples
+        runs = _spans(contours_list, y)
+        if not runs:
+            continue
+        lefts.append(runs[0][0])
+        rights.append(runs[-1][1])
+    if len(lefts) < samples // 2:
+        return None
+
+    # An edge held by a stem barely moves; one held by arms of different lengths
+    # sweeps across the cell.
+    left_range = max(lefts) - min(lefts)
+    right_range = max(rights) - min(rights)
+    if abs(left_range - right_range) < MIN_BAND_SEPARATION:
+        return None
+    return "left" if left_range < right_range else "right"
+
+
+def refit_single_band(glyph, glyf, target: float) -> float | None:
+    """Translate a single-band glyph rigidly so its stem side sits at `target`.
+
+    Nothing is stretched, so no stroke changes width. When neither side is a stem the
+    ink is centred instead, which is what a symmetric glyph wants.
+    """
+    xs = [x for x, _ in glyph.coordinates]
+    if not xs:
+        return None
+    left, right = min(xs), max(xs)
+    side = _stem_side(glyph, glyf)
+    if side == "left":
+        shift = target - left
+    elif side == "right":
+        shift = (ADVANCE - target) - right
+    else:
+        shift = (ADVANCE - (right - left)) / 2 - left
+    if abs(shift) < 0.5:
+        return None
+    glyph.coordinates = GlyphCoordinates(
+        [(round(x + shift), y) for x, y in glyph.coordinates]
+    )
+    return 0.0
+
+
+def refit(glyph, glyf, target: float) -> float | None:
+    """Move the outermost ink to `target` units of sidebearing without changing
+    stroke widths.
 
     The two outer bands translate rigidly, so every horizontal distance inside them
     — every stem width — survives. Only the space between them stretches, which is
@@ -145,8 +258,6 @@ def refit(glyph, glyf, target_sidebearing: float) -> float | None:
     left_start, left_end, right_start, right_end = bands
     if right_start - left_end < MIN_BAND_SEPARATION:
         return None
-
-    target = target_sidebearing * ADVANCE
     shift_left = target - left_start
     shift_right = (ADVANCE - target) - right_end
     if abs(shift_left) < 0.5 and abs(shift_right) < 0.5:
@@ -172,8 +283,16 @@ def refit(glyph, glyf, target_sidebearing: float) -> float | None:
     return shift_right - shift_left
 
 
-def apply(font) -> dict[str, float]:
-    """Refit every classified glyph. Returns the width change per glyph."""
+ROUND_CLASS = frozenset("O C G Q S o c e s a g".split())
+
+
+def apply(font, stem: float = REGULAR_STEM) -> dict[str, float]:
+    """Refit every classified glyph. Returns the width change per glyph.
+
+    `stem` is the family's stem at this master's weight, not a constant. Passing the
+    default here fits every master to the default's ink width, which is the defect
+    described on `SHRINK_PER_STEM`.
+    """
     glyf = font["glyf"]
     cmap = font.getBestCmap()
     by_name: dict[str, float] = {}
@@ -181,15 +300,22 @@ def apply(font) -> dict[str, float]:
         character = chr(codepoint)
         if name in EXCLUDED:
             continue
-        target = SHAPE_CLASS.get(character) or SHAPE_CLASS.get(name)
-        if target is None:
+        fraction = SHAPE_CLASS.get(character) or SHAPE_CLASS.get(name)
+        if fraction is None:
             continue
         glyph = glyf[name]
         if glyph.numberOfContours <= 0:
             continue
         if font["hmtx"].metrics[name][0] != ADVANCE:
             continue
-        change = refit(glyph, glyf, target)
+        target = target_units(fraction, stem, is_round=character in ROUND_CLASS)
+        # Two bands means the glyph can be widened or narrowed; one band means it can
+        # only be moved. `refit` returns None for both an unfittable glyph and one
+        # already at target, so decide on the bands rather than on its return value.
+        if _ink_bands(glyph, glyf) is None:
+            change = refit_single_band(glyph, glyf, target)
+        else:
+            change = refit(glyph, glyf, target)
         if change is not None:
             glyph.recalcBounds(glyf)
             font["hmtx"].metrics[name] = (ADVANCE, glyph.xMin)
@@ -205,7 +331,6 @@ def apply(font) -> dict[str, float]:
 # stem, and detecting a "narrowest run" on them finds the thin part of a curve and
 # corrects the wrong thing - it took 5 from 83 to 76 and 8 from 78 to 66.
 STEM_COMPENSATED = ("l", "one")
-REGULAR_STEM = 80.0
 
 
 def _stem_band(glyph, glyf, samples: int = 40):
@@ -239,6 +364,12 @@ def _stem_band(glyph, glyf, samples: int = 40):
     return centres[len(centres) // 2], median_width
 
 
+def measure_vertical_stem(font, glyph_name: str = "H") -> float | None:
+    """Measure the control stem after weight and optical-size transforms."""
+    band = _stem_band(font["glyf"][glyph_name], font["glyf"])
+    return None if band is None else band[1]
+
+
 def restore_stem(glyph, glyf, target: float = REGULAR_STEM, scale: float = 1.0):
     """Widen the vertical stem back to target without changing the glyph's width.
 
@@ -258,6 +389,61 @@ def restore_stem(glyph, glyf, target: float = REGULAR_STEM, scale: float = 1.0):
         [(round(x - delta if x < centre else x + delta), y) for x, y in glyph.coordinates]
     )
     return delta * 2
+
+
+# `L`'s foot bar stops short of where the flats end, so the gap after it reads as a
+# hole: at ExtraBold its right sidebearing was 0.162 of the cell against 0.071 on
+# `H`, a 53-unit shortfall, and fitting can only slide the glyph, not fill it.
+# Stretching the bar is not a stroke change — the bar is horizontal, so lengthening
+# it leaves its thickness alone.
+BAR_LENGTHENED = ("L", "Lacute", "Lcommaaccent", "Lcaron", "Ldot", "Lslash")
+
+
+def lengthen_bar(glyph, glyf, target_right: float) -> float | None:
+    """Stretch the horizontal bar right of the stem so its end reaches `target_right`."""
+    band = _stem_band(glyph, glyf)
+    if band is None:
+        return None
+    centre, width = band
+    stem_right = centre + width / 2
+    xs = [x for x, _ in glyph.coordinates]
+    if not xs:
+        return None
+    right = max(xs)
+    reach = right - stem_right
+    if reach < MIN_BAND_SEPARATION or abs(target_right - right) < 0.5:
+        return None
+    scale = (target_right - stem_right) / reach
+    if scale <= 0:
+        return None
+    glyph.coordinates = GlyphCoordinates(
+        [
+            (round(x if x <= stem_right else stem_right + (x - stem_right) * scale), y)
+            for x, y in glyph.coordinates
+        ]
+    )
+    return target_right - right
+
+
+def apply_bar_lengthening(font, stem: float) -> dict[str, float]:
+    """Bring `L`'s bar out to the same right edge the flat-sided capitals reach."""
+    glyf = font["glyf"]
+    cmap = font.getBestCmap()
+    target_right = ADVANCE - target_units(FLAT, stem)
+    result: dict[str, float] = {}
+    for character in BAR_LENGTHENED:
+        name = cmap.get(ord(character)) if len(character) == 1 else character
+        if name is None or name not in glyf:
+            continue
+        glyph = glyf[name]
+        if glyph.numberOfContours <= 0:
+            continue
+        change = lengthen_bar(glyph, glyf, target_right)
+        if change is not None:
+            glyph.recalcBounds(glyf)
+            font["hmtx"].metrics[name] = (ADVANCE, glyph.xMin)
+            result[name] = change
+    return result
 
 
 def apply_stem_compensation(font, stem: float) -> dict[str, float]:

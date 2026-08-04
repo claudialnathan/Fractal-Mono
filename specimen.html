@@ -83,7 +83,7 @@
             </div>
             <div>
               <dt>Axes</dt>
-              <dd><span data-fact="axis">wght 100–800 · opsz 9–72</span></dd>
+              <dd><span data-fact="axis">wght 100–800 · wdth 85–115 · opsz 9–72</span></dd>
             </div>
             <div>
               <dt>Named instances</dt>
@@ -102,7 +102,7 @@
               <dd data-fact="features">38</dd>
             </div>
             <div>
-              <dt>Cell advance</dt>
+              <dt>Normal cell</dt>
               <dd data-fact="advance">579 / 1000 UPM</dd>
             </div>
             <div>
@@ -120,8 +120,9 @@
             <div>
               <h2 id="tester-heading">Type tester</h2>
               <p>
-                Set weight and optical size independently. Size, leading,
-                tracking, alignment, and programming ligatures stay separate.
+                Set weight, width, and optical size independently. Size,
+                leading, tracking, alignment, and programming ligatures stay
+                separate.
               </p>
             </div>
           </header>
@@ -142,6 +143,22 @@
                   step="1"
                 />
                 <div class="instance-buttons" data-instance-buttons></div>
+              </div>
+
+              <div class="control-group">
+                <div class="control-label">
+                  <label for="tester-width">Width</label>
+                  <output id="tester-width-output" for="tester-width">100</output>
+                </div>
+                <input
+                  id="tester-width"
+                  type="range"
+                  min="85"
+                  max="115"
+                  value="100"
+                  step="1"
+                />
+                <p class="control-note">85 condensed · 100 normal · 115 expanded</p>
               </div>
 
               <div class="control-group">
@@ -208,6 +225,7 @@ without the
 control-panel pose.</textarea>
               <div class="tester-readout" aria-live="polite">
                 <span><b data-readout="weight">400</b> weight</span>
+                <span><b data-readout="width">100</b> wdth</span>
                 <span><b data-readout="optical">14</b> opsz</span>
                 <span><b data-readout="size">72</b> px</span>
                 <span><b data-readout="leading">1.05</b> leading</span>
@@ -225,9 +243,9 @@ control-panel pose.</textarea>
             <div>
               <h2 id="design-heading">Distinguishing construction</h2>
               <p>
-                The family keeps a strict fixed cell while making frequently
-                confused forms immediately distinct. These are the default drawings,
-                not alternates staged for the specimen.
+                The family stays strictly monospaced at every width while making
+                frequently confused forms immediately distinct. These are the
+                default drawings, not alternates staged for the specimen.
               </p>
             </div>
           </header>
@@ -280,11 +298,11 @@ control-panel pose.</textarea>
           <header class="section-intro">
             <p class="section-index">03</p>
             <div>
-              <h2 id="weights-heading">Two axes, every in-between</h2>
+              <h2 id="weights-heading">Three axes, every in-between</h2>
               <p>
                 Nine named instances cover common UI and editorial roles, but the
                 variable file accepts any whole or fractional weight from 100 to 800,
-                with text-to-display optical sizing from 9 to 72.
+                width from 85 to 115, and text-to-display optical sizing from 9 to 72.
               </p>
             </div>
           </header>
@@ -300,6 +318,20 @@ control-panel pose.</textarea>
             </article>
             <article style="font-variation-settings: &quot;opsz&quot; 72">
               <span>Display 72</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+          </div>
+          <div class="optical-comparison" aria-label="Width comparison">
+            <article style="font-variation-settings: &quot;wdth&quot; 85, &quot;opsz&quot; 14">
+              <span>Condensed 85</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+            <article style="font-variation-settings: &quot;wdth&quot; 100, &quot;opsz&quot; 14">
+              <span>Normal 100</span>
+              <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
+            </article>
+            <article style="font-variation-settings: &quot;wdth&quot; 115, &quot;opsz&quot; 14">
+              <span>Expanded 115</span>
               <p>Interface rhythm · 0Oo iïj · Whether its a year</p>
             </article>
           </div>
@@ -323,9 +355,10 @@ control-panel pose.</textarea>
             <div>
               <h2 id="code-heading">Source stays source</h2>
               <p>
-                Every programming character keeps one 579-unit cell. The complete
-                joined set remains available under <code>dlig</code>, while copying,
-                selection, and cursor movement keep the source sequence intact.
+                Every programming character keeps one shared cell at the selected
+                width; Normal uses 579 units. The complete joined set remains
+                available under <code>dlig</code>, while copying, selection, and
+                cursor movement keep the source sequence intact.
               </p>
             </div>
           </header>
@@ -377,7 +410,7 @@ pipeline --&gt; validate --&gt; release;</code></pre>
             <div>
               <h2 id="features-heading">OpenType feature laboratory</h2>
               <p>
-                All 38 unique GSUB and GPOS tags in the release are listed below.
+                Every GSUB and GPOS feature in the release is listed below.
                 Automatic shaping features are identified; optional features can be
                 combined in the live line without changing the font globally.
               </p>
@@ -516,7 +549,8 @@ pipeline --&gt; validate --&gt; release;</code></pre>
               <p>
                 The line box is intentionally conventional while the visible forms
                 sit on a 680-unit cap height and 528-unit x-height. Spacing glyphs
-                keep the same 579-unit cell across every weight.
+                keep the same cell across every weight and optical size. Width
+                changes the shared cell from 492 to 666 units.
               </p>
             </div>
           </header>
@@ -597,13 +631,13 @@ pipeline --&gt; validate --&gt; release;</code></pre>
             <article>
               <p class="eyebrow">Desktop</p>
               <h3>Variable TTF</h3>
-              <p>One file, 100–800, nine named instances.</p>
+              <p>One file, wght 100–800, wdth 85–115, opsz 9–72.</p>
               <a href="./fonts/desktop/FractalMono-Variable.ttf" download>Download TTF</a>
             </article>
             <article>
               <p class="eyebrow">Web</p>
               <h3>Variable WOFF2</h3>
-              <p>The complete family and repertoire in approximately 136 KB.</p>
+              <p>The complete three-axis family and repertoire in one web font.</p>
               <a href="./fonts/web/FractalMono-Variable.woff2" download>Download WOFF2</a>
             </article>
             <article>
@@ -652,6 +686,7 @@ pipeline --&gt; validate --&gt; release;</code></pre>
   src: url("./FractalMono-Variable.woff2") format("woff2");
   font-style: normal;
   font-weight: 100 800;
+  font-stretch: 85% 115%;
   font-display: swap;
 }
 
@@ -667,6 +702,7 @@ pipeline --&gt; validate --&gt; release;</code></pre>
               <pre id="web-feature-code"><code>.code {
   font-family: "Fractal Mono", monospace;
   font-weight: 450;
+  font-stretch: 100%;
   font-variant-ligatures: none;
   font-variant-numeric: tabular-nums;
 }
@@ -730,7 +766,7 @@ pipeline --&gt; validate --&gt; release;</code></pre>
               <h3>Signature forms</h3>
               <p>
                 R, r, K, J/j, t, and w anchor the family. Dotted O/o/0, compact symbols,
-                and the strict 579-unit cell complete Fractal Mono’s visual language.
+                and its strict per-width cells complete Fractal Mono’s visual language.
               </p>
               <a href="#design">See the construction</a>
             </article>
@@ -745,8 +781,8 @@ pipeline --&gt; validate --&gt; release;</code></pre>
             <article>
               <h3>Release <span data-release-version>1.000</span></h3>
               <p>
-                Weight and optical-size masters, redesigned signature forms, and
-                clean square-dot punctuation in one variable family.
+                Weight, width, and optical-size masters, redesigned signature
+                forms, and clean square-dot punctuation in one variable family.
               </p>
               <a href="./README.md">Full project notes</a>
             </article>
@@ -755,19 +791,19 @@ pipeline --&gt; validate --&gt; release;</code></pre>
           <div class="scope-table" role="table" aria-label="Release scope">
             <div role="row">
               <span role="columnheader">Included now</span>
-              <p role="cell">Roman upright; weight 100–800; optical size 9–72; 9 named weight instances; Latin, Cyrillic, Greek, symbols, code alternates; 38 OpenType tags.</p>
+              <p role="cell">Roman upright; weight 100–800; width 85–115; optical size 9–72; 9 named weight instances; Latin, Cyrillic, Greek, symbols, code alternates; 38 OpenType tags.</p>
             </div>
             <div role="row">
               <span role="columnheader">Deliberate defaults</span>
-              <p role="cell">Dotted O/o/0; programming ligatures off; tabular fixed cells; unhinted transformed outlines; modern grayscale smoothing.</p>
+              <p role="cell">Dotted O/o/0; programming ligatures off; tabular monospacing at every width; unhinted transformed outlines; modern grayscale smoothing.</p>
             </div>
             <div role="row">
               <span role="columnheader">Not in <span data-release-version>1.000</span></span>
-              <p role="cell">Italic or slant axis; width axis; purpose-built Windows hinting; native editorial review for every detected language.</p>
+              <p role="cell">Italic or slant axis; purpose-built Windows hinting; native editorial review for every detected language.</p>
             </div>
             <div role="row">
               <span role="columnheader">Release validation</span>
-              <p role="cell">30 files parsed; variable interpolation, cell widths, features, repeat guards, metrics, hashes, browser rendering, and protected outlines checked.</p>
+              <p role="cell">30 files parsed; 315 combined-axis instances, cell widths, features, repeat guards, metrics, hashes, browser rendering, and protected outlines checked.</p>
             </div>
           </div>
 

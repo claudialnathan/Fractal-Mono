@@ -2,3 +2,4 @@ fonttools[woff]>=4.59,<5
 numpy>=1.26,<3
 brotli>=1.1,<2
 pillow>=11,<13
+skia-pathops>=0.8,<1
