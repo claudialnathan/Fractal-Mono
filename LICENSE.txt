@@ -1,11 +1,10 @@
-Copyright 2026 Claudia Nathan, with Reserved Font Name "Fractal Mono".
-Fractal Mono design, direction, modifications, and original contributions.
 Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
 Portions from Whois Mono: Created by raphael with FontForge 2.0 (http://fontforge.sf.net)
+Copyright 2026 Claudia Nathan, with Reserved Font Name "Fractal Mono".
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-https://scripts.sil.org/OFL
+https://openfontlicense.org
 
 
 -----------------------------------------------------------

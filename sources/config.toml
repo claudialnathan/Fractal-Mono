@@ -1,0 +1,29 @@
+sources = ["FractalMono.glyphspackage"]
+features = "features.fea"
+familyName = "Fractal Mono"
+vendorID = "FRCT"
+versionMajor = 1
+versionMinor = 0
+manufacturer = "Fractal"
+designer = "Claudia Nathan"
+description = "{familyName} is a monospaced typeface designed by Claudia Nathan."
+copyright = "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono). Portions from Whois Mono: Created by raphael with FontForge 2.0 (http://fontforge.sf.net). Copyright 2026 Claudia Nathan, with Reserved Font Name \"{familyName}\"."
+outputDir = "../build/source"
+buildStatic = true
+buildVariable = true
+releaseReady = false
+independenceReady = true
+approvedCandidateSha256 = ""
+referenceSha256 = "5514b0cae152f803db2a05a6317156f9b85500dc90e10c918fa60b9057821d30"
+expectedGlyphCount = 1755
+expectedEncodedCharacters = 1372
+
+[axes.wght]
+minimum = 100
+default = 400
+maximum = 800
+
+[axes.opsz]
+minimum = 9
+default = 14
+maximum = 72

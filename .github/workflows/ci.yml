@@ -1,43 +1,26 @@
-name: CI
-
+name: Font checks
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-
 permissions:
   contents: read
-
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: "3.12"
+          python-version: '3.12'
           cache: pip
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-      - name: Install font tools
+      - run: python -m pip install -r requirements.txt
+      - run: cp fonts/SHA256SUMS /tmp/fractal-committed
+      - run: python build.py --check
+      - run: diff /tmp/fractal-committed fonts/SHA256SUMS
+      - name: Verify reproducible font exports
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes libharfbuzz-bin
-          python -m pip install -r requirements.txt
-      - name: Install browser tools
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-      - name: Rebuild
-        run: make build
-      - name: Validate
-        run: make test
-      - name: Reproducible
-        run: |
-          shasum -a256 fonts/desktop/*.ttf fonts/web/* > /tmp/first
-          make build
-          shasum -a256 fonts/desktop/*.ttf fonts/web/* > /tmp/second
-          diff /tmp/first /tmp/second && echo "identical bytes from an identical source"
+          cp fonts/SHA256SUMS /tmp/fractal-first
+          python build.py
+          diff /tmp/fractal-first fonts/SHA256SUMS

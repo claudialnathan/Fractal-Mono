@@ -1,5 +1,6 @@
-fonttools[woff]>=4.59,<5
-numpy>=1.26,<3
-brotli>=1.1,<2
-pillow>=11,<13
-skia-pathops>=0.8,<1
+brotli==1.2.0
+fonttools==4.63.0
+glyphsLib==6.14.0
+numpy==2.5.2
+pillow==12.3.0
+uharfbuzz==0.57.0

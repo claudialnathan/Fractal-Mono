@@ -1,12 +1,12 @@
 {
   "name": "fractal-mono",
   "version": "1.0.0",
+  "description": "Fractal Mono font build and browser checks",
+  "license": "OFL-1.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "test:browser": "node source/browser_specimens.mjs",
-    "test:factsheet": "node source/verify_factsheet.mjs",
-    "test:desktop": "node source/verify_desktop_specimen.mjs"
+    "test:browser": "node .github/test_browser.mjs"
   },
   "devDependencies": {
     "axe-core": "4.11.0",
